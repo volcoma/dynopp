@@ -56,38 +56,40 @@ void test_binder(const std::string& test, int calls, int slots, int tests)
 	suitepp::test(test + " multicast, calls=" + std::to_string(calls) + ", slots=" + std::to_string(slots),
 	[&]()
     {
-        EXPECT_NOTHROWS
-        (
+	    auto code = [&]()
+        {
             for(int i = 0; i < calls; ++i)
             {
                 binder.dispatch("plugin_on_system_ready");
             }
+        };
 
-        ).repeat(tests);
+        EXPECT_NOTHROWS(code()).repeat(tests);
+
 	});
 
-	suitepp::test(test + " unicast without return, calls=" + std::to_string(calls), [&]()
-    {
-        EXPECT_NOTHROWS
-        (
-            for(int i = 0; i < calls; ++i)
-            {
-                binder.call("plugin_on_system_ready");
-            }
+	suitepp::test(test + " unicast without return, calls=" + std::to_string(calls), [&]() {
 
-        ).repeat(tests);
+		auto code = [&]() {
+			for(int i = 0; i < calls; ++i)
+			{
+				binder.call("plugin_on_system_ready");
+			}
+		};
+
+		EXPECT_NOTHROWS(code()).repeat(tests);
 	});
 
-	suitepp::test(test + " unicast with return, calls=" + std::to_string(calls), [&]()
-    {
-        EXPECT_NOTHROWS
-        (
-            for(int i = 0; i < calls; ++i)
-            {
-                binder.template call<int>("plugin_on_system_ready");
-            }
+	suitepp::test(test + " unicast with return, calls=" + std::to_string(calls), [&]() {
 
-        ).repeat(tests);
+		auto code = [&]() {
+			for(int i = 0; i < calls; ++i)
+			{
+				binder.template call<int>("plugin_on_system_ready");
+			}
+		};
+
+		EXPECT_NOTHROWS(code()).repeat(tests);
 	});
 	// clang-format on
 }
