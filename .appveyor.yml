@@ -90,8 +90,8 @@ before_build:
 # we can use Ninja for all configurations
 #######################################################################################
 build_script:
-  - git submodule update --init
+  - git submodule update --init --recursive
   - mkdir build
   - cd build
-  - cmake -G "Ninja" -DCMAKE_BUILD_TYPE=Release -DBUILD_BINDERPP_TESTS=ON ..
+  - cmake -G "Ninja" -DCMAKE_BUILD_TYPE=Release -DBUILD_DYNOPPPP_TESTS=ON ..
   - cmake --build .
