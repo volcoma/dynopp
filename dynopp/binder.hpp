@@ -1,6 +1,5 @@
-
-#ifndef DYNAMIC_BINDER_HPP
-#define DYNAMIC_BINDER_HPP
+#ifndef DYNO_BINDER_HPP
+#define DYNO_BINDER_HPP
 
 #include <algorithm>
 #include <atomic>
@@ -26,7 +25,7 @@ namespace dyno
 
 template <typename OArchive, typename IArchive, typename Key = std::string, typename View = Key,
 		  typename Sentinel = std::weak_ptr<void>>
-struct dynamic_binder
+struct binder
 {
 
 public:
@@ -135,7 +134,7 @@ template <typename T>
 inline std::string diagnostic(const char* func, const T& val)
 {
 	std::ostringstream os;
-	os << "dynamic_binder.";
+	os << "binder.";
 	os << func;
 	os << "( \"";
 	os << val;
@@ -226,8 +225,7 @@ inline delegate_t<void(IArchive&)> package_multicast(C* const object_ptr, F&& f)
 
 template <typename OArchive, typename IArchive, typename Key, typename View, typename Sentinel>
 template <typename F>
-slot_t dynamic_binder<OArchive, IArchive, Key, View, Sentinel>::connect(const View& id, F&& f,
-																		std::uint32_t priority)
+slot_t binder<OArchive, IArchive, Key, View, Sentinel>::connect(const View& id, F&& f, std::uint32_t priority)
 {
 	static_assert(std::is_void<hpp::fn_result_of<F>>::value,
 				  "signals cannot have a return type different from void");
@@ -244,8 +242,8 @@ slot_t dynamic_binder<OArchive, IArchive, Key, View, Sentinel>::connect(const Vi
 
 template <typename OArchive, typename IArchive, typename Key, typename View, typename Sentinel>
 template <typename C, typename F>
-slot_t dynamic_binder<OArchive, IArchive, Key, View, Sentinel>::connect(const View& id, C* const object_ptr,
-																		F&& f, std::uint32_t priority)
+slot_t binder<OArchive, IArchive, Key, View, Sentinel>::connect(const View& id, C* const object_ptr, F&& f,
+																std::uint32_t priority)
 {
 	static_assert(std::is_void<hpp::fn_result_of<F>>::value,
 				  "signals cannot have a return type different from void");
@@ -262,9 +260,8 @@ slot_t dynamic_binder<OArchive, IArchive, Key, View, Sentinel>::connect(const Vi
 
 template <typename OArchive, typename IArchive, typename Key, typename View, typename Sentinel>
 template <typename F>
-slot_t dynamic_binder<OArchive, IArchive, Key, View, Sentinel>::connect(const View& id,
-																		const Sentinel& sentinel, F&& f,
-																		std::uint32_t priority)
+slot_t binder<OArchive, IArchive, Key, View, Sentinel>::connect(const View& id, const Sentinel& sentinel,
+																F&& f, std::uint32_t priority)
 {
 	static_assert(std::is_void<hpp::fn_result_of<F>>::value,
 				  "signals cannot have a return type different from void");
@@ -282,10 +279,9 @@ slot_t dynamic_binder<OArchive, IArchive, Key, View, Sentinel>::connect(const Vi
 
 template <typename OArchive, typename IArchive, typename Key, typename View, typename Sentinel>
 template <typename C, typename F>
-slot_t dynamic_binder<OArchive, IArchive, Key, View, Sentinel>::connect(const View& id,
-																		const Sentinel& sentinel,
-																		C* const object_ptr, F&& f,
-																		std::uint32_t priority)
+slot_t binder<OArchive, IArchive, Key, View, Sentinel>::connect(const View& id, const Sentinel& sentinel,
+																C* const object_ptr, F&& f,
+																std::uint32_t priority)
 {
 	static_assert(std::is_void<hpp::fn_result_of<F>>::value,
 				  "signals cannot have a return type different from void");
@@ -302,7 +298,7 @@ slot_t dynamic_binder<OArchive, IArchive, Key, View, Sentinel>::connect(const Vi
 }
 
 template <typename OArchive, typename IArchive, typename Key, typename View, typename Sentinel>
-void dynamic_binder<OArchive, IArchive, Key, View, Sentinel>::disconnect(const View& id, slot_t slot_id)
+void binder<OArchive, IArchive, Key, View, Sentinel>::disconnect(const View& id, slot_t slot_id)
 {
 	auto find_it = multicast_list_.find(id);
 	if(find_it != std::end(multicast_list_))
@@ -331,15 +327,14 @@ void dynamic_binder<OArchive, IArchive, Key, View, Sentinel>::disconnect(const V
 
 template <typename OArchive, typename IArchive, typename Key, typename View, typename Sentinel>
 template <typename... Args>
-void dynamic_binder<OArchive, IArchive, Key, View, Sentinel>::dispatch(const View& id, Args&&... args)
+void binder<OArchive, IArchive, Key, View, Sentinel>::dispatch(const View& id, Args&&... args)
 {
 	dispatch_impl(id, std::forward<Args>(args)...);
 }
 
 template <typename OArchive, typename IArchive, typename Key, typename View, typename Sentinel>
 template <typename... Args>
-inline void dynamic_binder<OArchive, IArchive, Key, View, Sentinel>::dispatch_impl(const View& id,
-																				   Args&&... args)
+inline void binder<OArchive, IArchive, Key, View, Sentinel>::dispatch_impl(const View& id, Args&&... args)
 {
 	auto find_it = multicast_list_.find(id);
 	if(find_it == std::end(multicast_list_))
@@ -456,7 +451,7 @@ inline void dynamic_binder<OArchive, IArchive, Key, View, Sentinel>::dispatch_im
 
 template <typename OArchive, typename IArchive, typename Key, typename View, typename Sentinel>
 template <typename F>
-void dynamic_binder<OArchive, IArchive, Key, View, Sentinel>::bind(const View& id, F&& f)
+void binder<OArchive, IArchive, Key, View, Sentinel>::bind(const View& id, F&& f)
 {
 	auto& info = unicast_list_[Key(id)];
 	info.unicast = detail::package_unicast<OArchive, IArchive>(std::forward<F>(f));
@@ -464,7 +459,7 @@ void dynamic_binder<OArchive, IArchive, Key, View, Sentinel>::bind(const View& i
 
 template <typename OArchive, typename IArchive, typename Key, typename View, typename Sentinel>
 template <typename C, typename F>
-void dynamic_binder<OArchive, IArchive, Key, View, Sentinel>::bind(const View& id, C* const object_ptr, F&& f)
+void binder<OArchive, IArchive, Key, View, Sentinel>::bind(const View& id, C* const object_ptr, F&& f)
 {
 	auto& info = unicast_list_[Key(id)];
 	info.unicast = detail::package_unicast<OArchive, IArchive>(object_ptr, std::forward<F>(f));
@@ -472,8 +467,7 @@ void dynamic_binder<OArchive, IArchive, Key, View, Sentinel>::bind(const View& i
 
 template <typename OArchive, typename IArchive, typename Key, typename View, typename Sentinel>
 template <typename F>
-void dynamic_binder<OArchive, IArchive, Key, View, Sentinel>::bind(const View& id, const Sentinel& sentinel,
-																   F&& f)
+void binder<OArchive, IArchive, Key, View, Sentinel>::bind(const View& id, const Sentinel& sentinel, F&& f)
 {
 	auto& info = unicast_list_[Key(id)];
 	info.sentinel = sentinel;
@@ -482,8 +476,8 @@ void dynamic_binder<OArchive, IArchive, Key, View, Sentinel>::bind(const View& i
 
 template <typename OArchive, typename IArchive, typename Key, typename View, typename Sentinel>
 template <typename C, typename F>
-void dynamic_binder<OArchive, IArchive, Key, View, Sentinel>::bind(const View& id, const Sentinel& sentinel,
-																   C* const object_ptr, F&& f)
+void binder<OArchive, IArchive, Key, View, Sentinel>::bind(const View& id, const Sentinel& sentinel,
+														   C* const object_ptr, F&& f)
 {
 	auto& info = unicast_list_[Key(id)];
 	info.sentinel = sentinel;
@@ -491,13 +485,13 @@ void dynamic_binder<OArchive, IArchive, Key, View, Sentinel>::bind(const View& i
 }
 
 template <typename OArchive, typename IArchive, typename Key, typename View, typename Sentinel>
-bool dynamic_binder<OArchive, IArchive, Key, View, Sentinel>::is_bound(const View& id) const
+bool binder<OArchive, IArchive, Key, View, Sentinel>::is_bound(const View& id) const
 {
 	auto it = unicast_list_.find(id);
 	return it != std::end(unicast_list_);
 }
 template <typename OArchive, typename IArchive, typename Key, typename View, typename Sentinel>
-void dynamic_binder<OArchive, IArchive, Key, View, Sentinel>::unbind(const View& id)
+void binder<OArchive, IArchive, Key, View, Sentinel>::unbind(const View& id)
 {
 	auto it = unicast_list_.find(id);
 	if(it != std::end(unicast_list_))
@@ -508,14 +502,14 @@ void dynamic_binder<OArchive, IArchive, Key, View, Sentinel>::unbind(const View&
 
 template <typename OArchive, typename IArchive, typename Key, typename View, typename Sentinel>
 template <typename R, typename... Args>
-decltype(auto) dynamic_binder<OArchive, IArchive, Key, View, Sentinel>::call(const View& id, Args&&... args)
+decltype(auto) binder<OArchive, IArchive, Key, View, Sentinel>::call(const View& id, Args&&... args)
 {
 	return call_impl<R>(id, std::forward<Args>(args)...);
 }
 
 template <typename OArchive, typename IArchive, typename Key, typename View, typename Sentinel>
 template <typename R, typename... Args, typename std::enable_if_t<!std::is_void<R>::value>*>
-inline R dynamic_binder<OArchive, IArchive, Key, View, Sentinel>::call_impl(const View& id, Args&&... args)
+inline R binder<OArchive, IArchive, Key, View, Sentinel>::call_impl(const View& id, Args&&... args)
 {
 	static_assert(!std::is_reference<R>::value, "unsupported return by reference (use return by value)");
 
@@ -622,7 +616,7 @@ inline R dynamic_binder<OArchive, IArchive, Key, View, Sentinel>::call_impl(cons
 
 template <typename OArchive, typename IArchive, typename Key, typename View, typename Sentinel>
 template <typename R, typename... Args, typename std::enable_if_t<std::is_void<R>::value>*>
-inline R dynamic_binder<OArchive, IArchive, Key, View, Sentinel>::call_impl(const View& id, Args&&... args)
+inline R binder<OArchive, IArchive, Key, View, Sentinel>::call_impl(const View& id, Args&&... args)
 {
 	auto it = unicast_list_.find(id);
 
@@ -692,14 +686,14 @@ inline R dynamic_binder<OArchive, IArchive, Key, View, Sentinel>::call_impl(cons
 }
 
 template <typename OArchive, typename IArchive, typename Key, typename View, typename Sentinel>
-void dynamic_binder<OArchive, IArchive, Key, View, Sentinel>::clear()
+void binder<OArchive, IArchive, Key, View, Sentinel>::clear()
 {
 	multicast_list_.clear();
 	unicast_list_.clear();
 }
 
 template <typename OArchive, typename IArchive, typename Key, typename View, typename Sentinel>
-void dynamic_binder<OArchive, IArchive, Key, View, Sentinel>::submit_pending()
+void binder<OArchive, IArchive, Key, View, Sentinel>::submit_pending()
 {
 	for(auto& kvp : multicast_list_)
 	{
@@ -711,7 +705,7 @@ void dynamic_binder<OArchive, IArchive, Key, View, Sentinel>::submit_pending()
 }
 
 template <typename OArchive, typename IArchive, typename Key, typename View, typename Sentinel>
-inline void dynamic_binder<OArchive, IArchive, Key, View, Sentinel>::submit_pending(
+inline void binder<OArchive, IArchive, Key, View, Sentinel>::submit_pending(
 	std::vector<multicast_info>& container, std::vector<multicast_info>& container_pending)
 {
 	if(!container_pending.empty())

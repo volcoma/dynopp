@@ -10,18 +10,21 @@ namespace dyno
 template <typename OArchive, typename IArchive>
 struct archive
 {
-	static_assert(sizeof(OArchive) == 0 || sizeof(IArchive) == 0, "Specialization required!");
+	using oarchive_t = OArchive;
+	using iarchive_t = IArchive;
 
-	static OArchive create_oarchive();
-	static IArchive create_iarchive(OArchive&&);
+	static_assert(sizeof(oarchive_t) == 0 || sizeof(iarchive_t) == 0, "Specialization required!");
 
-	static void rewind(IArchive&);
+	static oarchive_t create_oarchive();
+	static iarchive_t create_iarchive(oarchive_t&&);
+
+	static void rewind(iarchive_t&);
 
 	template <typename... Args>
-	static bool pack(OArchive&, Args&&...);
+	static bool pack(oarchive_t&, Args&&...);
 
 	template <typename T>
-	static bool unpack(IArchive&, T&);
+	static bool unpack(iarchive_t&, T&);
 };
 
 template <typename Sentinel>

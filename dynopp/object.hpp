@@ -1,5 +1,5 @@
-#ifndef DYNAMIC_OBJECT_HPP
-#define DYNAMIC_OBJECT_HPP
+#ifndef DYNO_OBJECT_HPP
+#define DYNO_OBJECT_HPP
 
 #include <algorithm>
 #include <atomic>
@@ -27,7 +27,7 @@ template <typename OArchive, typename IArchive, typename Key, typename View>
 struct proxy_op;
 
 template <typename OArchive, typename IArchive, typename Key = std::string, typename View = Key>
-struct dynamic_object
+struct object
 {
 	static_assert(std::is_constructible<Key, View>::value,
 				  "key type must be constructable from view type");
@@ -113,7 +113,7 @@ private:
 template <typename OArchive, typename IArchive, typename Key, typename View>
 struct proxy_op
 {
-	using object_t = dynamic_object<OArchive, IArchive, Key, View>;
+	using object_t = object<OArchive, IArchive, Key, View>;
 
 public:
 	proxy_op(const View& id, object_t& obj)

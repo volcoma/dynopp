@@ -1,6 +1,6 @@
 #include "anystream.hpp"
-#include <dynopp/dynamic_binder.hpp>
-#include <dynopp/dynamic_object.hpp>
+#include <dynopp/binder.hpp>
+#include <dynopp/object.hpp>
 #include <hpp/string_view.hpp>
 #include <suitepp/suitepp/suitepp.hpp>
 namespace dyno
@@ -8,20 +8,20 @@ namespace dyno
 template <>
 struct archive<anystream, anystream>
 {
-	using OArchive = anystream;
-	using IArchive = anystream;
+	using oarchive_t = anystream;
+	using iarchive_t = anystream;
 
-	static OArchive create_oarchive()
+	static oarchive_t create_oarchive()
 	{
 		return {};
 	}
-	static IArchive create_iarchive(OArchive&& oarchive)
+	static iarchive_t create_iarchive(oarchive_t&& oarchive)
 	{
 		return std::move(oarchive);
 	}
 
 	template <typename... Args>
-	static void pack(OArchive& oarchive, Args&&... args)
+	static void pack(oarchive_t& oarchive, Args&&... args)
 	{
 		oarchive.storage.reserve(sizeof...(Args));
 
@@ -30,13 +30,13 @@ struct archive<anystream, anystream>
 	}
 
 	template <typename T>
-	static bool unpack(IArchive& iarchive, T& obj)
+	static bool unpack(iarchive_t& iarchive, T& obj)
 	{
 		iarchive >> obj;
 		return static_cast<bool>(iarchive);
 	}
 
-	static void rewind(IArchive& iarchive)
+	static void rewind(iarchive_t& iarchive)
 	{
 		iarchive.rewind();
 	}
@@ -140,8 +140,8 @@ void test_binder(const std::string& test, int calls, int slots, int tests)
 
 int main()
 {
-	using anybinder = dyno::dynamic_binder<dyno::anystream, dyno::anystream, std::string, hpp::string_view>;
-	using anyobject = dyno::dynamic_object<dyno::anystream, dyno::anystream, std::string, hpp::string_view>;
+	using anybinder = dyno::binder<dyno::anystream, dyno::anystream, std::string, hpp::string_view>;
+	using anyobject = dyno::object<dyno::anystream, dyno::anystream, std::string, hpp::string_view>;
 
 	constexpr int calls = 1000000;
 	constexpr int tests = 10;
