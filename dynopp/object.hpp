@@ -67,6 +67,12 @@ public:
 		return exists;
 	}
 
+	bool has(const View& id)
+	{
+        auto find_it = values_.find(id);
+		return find_it != std::end(values_);
+	}
+
 	proxy_op_t operator[](const View& id)
 	{
 		return {id, *this};

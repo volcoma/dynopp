@@ -1,52 +1,13 @@
-#include "anystream.hpp"
+#include <dynopp/archives/anyarchive.hpp>
 #include <dynopp/binder.hpp>
 #include <dynopp/object.hpp>
 #include <hpp/string_view.hpp>
 #include <suitepp/suitepp/suitepp.hpp>
-namespace dyno
-{
-template <>
-struct archive<anystream, anystream>
-{
-	using oarchive_t = anystream;
-	using iarchive_t = anystream;
 
-	static oarchive_t create_oarchive()
-	{
-		return {};
-	}
-	static iarchive_t create_iarchive(oarchive_t&& oarchive)
-	{
-		return std::move(oarchive);
-	}
-
-	template <typename... Args>
-	static void pack(oarchive_t& oarchive, Args&&... args)
-	{
-		oarchive.storage.reserve(sizeof...(Args));
-
-		hpp::for_each(std::forward_as_tuple(std::forward<Args>(args)...),
-					  [&oarchive](auto&& arg) { oarchive << std::forward<decltype(arg)>(arg); });
-	}
-
-	template <typename T>
-	static bool unpack(iarchive_t& iarchive, T& obj)
-	{
-		iarchive >> obj;
-		return static_cast<bool>(iarchive);
-	}
-
-	static void rewind(iarchive_t& iarchive)
-	{
-		iarchive.rewind();
-	}
-};
-}
 
 template <typename T>
 void test_object(const std::string& test, int calls, int tests)
 {
-
 	suitepp::test(test + ", calls=" + std::to_string(calls), [&]() {
 
 		auto code = [&]() {
@@ -63,7 +24,6 @@ void test_object(const std::string& test, int calls, int tests)
 				std::string val2 = obj["key2"];
 				std::vector<std::string> val3 = obj["key3"];
 				T val4 = obj["key4"];
-
 				val1++;
 			}
 		};
