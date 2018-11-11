@@ -4,7 +4,6 @@
 #include <hpp/string_view.hpp>
 #include <suitepp/suitepp/suitepp.hpp>
 
-
 template <typename T>
 void test_object(const std::string& test, int calls, int tests)
 {
@@ -53,49 +52,44 @@ void test_binder(const std::string& test, int calls, int slots, int tests)
 
 	binder.submit_pending();
 
+	// clang-format off
 	suitepp::test(test + " multicast, calls=" + std::to_string(calls) + ", slots=" + std::to_string(slots),
-				  [&]() {
+	[&]()
+    {
+        EXPECT_NOTHROWS
+        (
+            for(int i = 0; i < calls; ++i)
+            {
+                binder.dispatch("plugin_on_system_ready");
+            }
 
-					  auto code = [&]() {
-						  for(int i = 0; i < calls; ++i)
-						  {
-							  binder.dispatch("plugin_on_system_ready");
-						  }
-
-						  return true;
-					  };
-
-					  EXPECT(code()).repeat(tests);
-
-				  });
-
-	suitepp::test(test + " unicast without return, calls=" + std::to_string(calls), [&]() {
-
-		auto code = [&]() {
-			for(int i = 0; i < calls; ++i)
-			{
-				binder.call("plugin_on_system_ready");
-			}
-
-			return true;
-		};
-
-		EXPECT(code()).repeat(tests);
+        ).repeat(tests);
 	});
 
-	suitepp::test(test + " unicast with return, calls=" + std::to_string(calls), [&]() {
+	suitepp::test(test + " unicast without return, calls=" + std::to_string(calls), [&]()
+    {
+        EXPECT_NOTHROWS
+        (
+            for(int i = 0; i < calls; ++i)
+            {
+                binder.call("plugin_on_system_ready");
+            }
 
-		auto code = [&]() {
-			for(int i = 0; i < calls; ++i)
-			{
-				binder.template call<int>("plugin_on_system_ready");
-			}
-
-			return true;
-		};
-
-		EXPECT(code()).repeat(tests);
+        ).repeat(tests);
 	});
+
+	suitepp::test(test + " unicast with return, calls=" + std::to_string(calls), [&]()
+    {
+        EXPECT_NOTHROWS
+        (
+            for(int i = 0; i < calls; ++i)
+            {
+                binder.template call<int>("plugin_on_system_ready");
+            }
+
+        ).repeat(tests);
+	});
+	// clang-format on
 }
 
 int main()
@@ -109,33 +103,6 @@ int main()
 
 	test_binder<anybinder>("any binder", calls, slots, tests);
 	test_object<anyobject>("any object", calls, tests);
-
-	//	{
-	//		std::unordered_map<std::string, std::vector<std::function<void()>>> mm;
-	//		for(int j = 0; j < slots; ++j)
-	//		{
-	//			mm["test"].emplace_back([]() {
-	//				auto a = 0;
-	//				a++;
-	//			});
-	//		}
-	//		suitepp::test("test raw", [&]() {
-
-	//			auto code = [&]() {
-	//				for(int i = 0; i < calls; ++i)
-	//				{
-	//					const auto& cont = mm["test"];
-	//					for(const auto& callback : cont)
-	//					{
-	//						callback();
-	//					}
-	//				}
-
-	//				return true;
-	//			};
-	//			EXPECT(code()).repeat(tests);
-	//		});
-	//	}
 
 	return 0;
 }
