@@ -1,4 +1,7 @@
-### dynopp c++14 library for dynamic dispatch and dynamic objects 
+[![Build Status](https://travis-ci.org/volcoma/dynopp.svg?branch=master)](https://travis-ci.org/volcoma/dynopp)
+[![Build status](https://ci.appveyor.com/api/projects/status/uexodqmh9u2qabc6?svg=true)](https://ci.appveyor.com/project/volcoma/dynopp)
+
+## dynopp c++14 library for dynamic dispatch and dynamic objects 
 
 ```c++
 
