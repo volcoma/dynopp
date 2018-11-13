@@ -18,4 +18,5 @@ include(target_warning_support)
 set_warning_level(${target_name} ultra)
 
 enable_testing()
-add_test(${target_name} ${target_name})
+#add_test(${target_name} ${target_name})
+add_test(NAME ${target_name} COMMAND ${target_name})
