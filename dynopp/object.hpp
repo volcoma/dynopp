@@ -29,8 +29,7 @@ struct proxy_op;
 template <typename OArchive, typename IArchive, typename Key = std::string, typename View = Key>
 struct object
 {
-	static_assert(std::is_constructible<Key, View>::value,
-				  "key type must be constructable from view type");
+	static_assert(std::is_constructible<Key, View>::value, "key type must be constructable from view type");
 
 public:
 	using archive_t = archive<OArchive, IArchive>;
@@ -69,7 +68,7 @@ public:
 
 	bool has(const View& id)
 	{
-        auto find_it = values_.find(id);
+		auto find_it = values_.find(id);
 		return find_it != std::end(values_);
 	}
 
@@ -78,19 +77,20 @@ public:
 		return {id, *this};
 	}
 
-    auto& get_values()
-    {
-        return values_;
-    }
-    const auto& get_values() const
-    {
-        return values_;
-    }
+	auto& get_values()
+	{
+		return values_;
+	}
+	const auto& get_values() const
+	{
+		return values_;
+	}
+
 private:
 	template <typename T>
 	std::tuple<bool, bool> get_verbose(const View& id, T& val)
 	{
-        using result_type = std::tuple<bool, bool>;
+		using result_type = std::tuple<bool, bool>;
 		auto it = values_.find(id);
 		if(it == std::end(values_))
 		{
@@ -151,12 +151,12 @@ public:
 		throw std::out_of_range("\"" + key_ + "\" - no such field exists");
 	}
 
-    template <typename T>
+	template <typename T>
 	operator hpp::optional<T>() const
 	{
 		hpp::optional<T> val{};
 		obj_.get(key_, *val);
-        return val;
+		return val;
 	}
 
 	template <typename T>
@@ -176,8 +176,6 @@ public:
 		}
 		return std::forward<T>(default_val);
 	}
-
-
 
 private:
 	Key key_;

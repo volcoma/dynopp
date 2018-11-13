@@ -1,6 +1,6 @@
 #pragma once
-#include "anystream.hpp"
 #include "../archive.h"
+#include "anystream.hpp"
 #include <hpp/utility.hpp>
 
 namespace dyno
@@ -41,5 +41,4 @@ struct archive<anystream, anystream>
 		iarchive.rewind();
 	}
 };
-
 }
