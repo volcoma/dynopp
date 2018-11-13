@@ -18,4 +18,4 @@ include(target_warning_support)
 set_warning_level(${target_name} ultra)
 
 enable_testing()
-add_test(dynopp_test ${target_name})
+add_test(${target_name} ${target_name})
