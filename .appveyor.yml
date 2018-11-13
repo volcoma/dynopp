@@ -93,5 +93,5 @@ build_script:
   - git submodule update --init --recursive
   - mkdir build
   - cd build
-  - cmake -G "Ninja" -DCMAKE_BUILD_TYPE=Release -DBUILD_DYNOPPPP_TESTS=ON ..
+  - cmake -G "Ninja" -DCMAKE_BUILD_TYPE=Release -DBUILD_DYNOPP_TESTS=ON ..
   - cmake --build .
