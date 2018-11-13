@@ -1,6 +1,6 @@
 message(STATUS "Enabled tests.")
 
-set(target_name dynopp_tests)
+set(target_name dynopp_test)
 
 file(GLOB_RECURSE libsrc *.h *.cpp *.hpp *.c *.cc)
 
