@@ -2,7 +2,6 @@
 #define DYNO_BINDER_HPP
 
 #include <algorithm>
-#include <atomic>
 #include <cassert>
 #include <functional>
 #include <iterator>
@@ -38,45 +37,67 @@ public:
 
 	static_assert(std::is_constructible<Key, View>::value, "key type must be constructable from view type");
 
+	//-----------------------------------------------------------------------------
+	/// Connects a multicast slot to a given signal and returns an id to it.
+	//-----------------------------------------------------------------------------
 	template <typename F>
 	slot_t connect(const View& id, F&& f, std::uint32_t priority = 0);
-
 	template <typename C, typename F>
 	slot_t connect(const View& id, C* const object_ptr, F&& f, std::uint32_t priority = 0);
-
 	template <typename F>
 	slot_t connect(const View& id, const Sentinel& sentinel, F&& f, std::uint32_t priority = 0);
-
 	template <typename C, typename F>
 	slot_t connect(const View& id, const Sentinel& sentinel, C* const object_ptr, F&& f,
 				   std::uint32_t priority = 0);
 
+	//-----------------------------------------------------------------------------
+	/// Disconnects a multicast slot via an id.
+	//-----------------------------------------------------------------------------
 	void disconnect(const View& id, slot_t slot_id);
 
+	//-----------------------------------------------------------------------------
+	/// Dispatch a signal with the given args.
+	//-----------------------------------------------------------------------------
 	template <typename... Args>
 	void dispatch(const View& id, Args&&... args);
 
+	//-----------------------------------------------------------------------------
+	/// Binds an unicast slot.
+	//-----------------------------------------------------------------------------
 	template <typename F>
 	void bind(const View& id, F&& f);
-
 	template <typename C, typename F>
 	void bind(const View& id, C* const object_ptr, F&& f);
-
 	template <typename F>
 	void bind(const View& id, const Sentinel& sentinel, F&& f);
-
 	template <typename C, typename F>
 	void bind(const View& id, const Sentinel& sentinel, C* const object_ptr, F&& f);
 
+	//-----------------------------------------------------------------------------
+	/// Check if a unicast is bound.
+	//-----------------------------------------------------------------------------
 	bool is_bound(const View& id) const;
 
+	//-----------------------------------------------------------------------------
+	/// Unbinds an unicast slot.
+	//-----------------------------------------------------------------------------
 	void unbind(const View& id);
 
+	//-----------------------------------------------------------------------------
+	/// Calls an unicast slot with the specified args. May return a value.
+	//-----------------------------------------------------------------------------
 	template <typename R = void, typename... Args>
 	decltype(auto) call(const View& id, Args&&... args);
 
+	//-----------------------------------------------------------------------------
+	/// Clears out the binder.
+	//-----------------------------------------------------------------------------
 	void clear();
-	void submit_pending();
+
+	//-----------------------------------------------------------------------------
+	/// Flush any pending additions.
+	//-----------------------------------------------------------------------------
+	void flush_pending();
 
 private:
 	template <typename... Args>
@@ -89,7 +110,7 @@ private:
 			  typename std::enable_if_t<std::is_void<R>::value>* = nullptr>
 	R call_impl(const View& id, Args&&... args);
 
-	std::atomic<slot_t> id_gen_{0};
+	slot_t id_gen_{0};
 	inline slot_t generate_id()
 	{
 		return ++id_gen_;
@@ -105,9 +126,9 @@ private:
 
 	struct multicast_info
 	{
-		slot_t id = 0;
+		slot_t id{0};
 		/// Priority used for sorting
-		std::uint32_t priority = 0;
+		std::uint32_t priority{0};
 		/// Sentinel used for life tracking
 		hpp::optional<Sentinel> sentinel;
 		/// The function wrapper
@@ -118,13 +139,17 @@ private:
 		std::vector<multicast_info> active;
 		std::vector<multicast_info> pending;
 	};
-	void submit_pending(std::vector<multicast_info>& container,
-						std::vector<multicast_info>& container_pending);
+	void flush_pending(std::vector<multicast_info>& container,
+					   std::vector<multicast_info>& container_pending);
 
+	/// container with the multicast slots
 	std::map<Key, slots, std::less<>> multicast_list_;
 
+	/// container with the unicast slots
 	std::map<Key, unicast_info, std::less<>> unicast_list_;
-	IArchive iarchive_ = archive_t::create_iarchive(archive_t::create_oarchive());
+
+	/// an internal archive used for optimizations
+	IArchive iarchive_{archive_t::create_iarchive(archive_t::create_oarchive())};
 };
 
 namespace detail
@@ -160,6 +185,20 @@ delegate_t<Ret(Ts...)> bind_this(C* const c, Ret (C::*m)(Ts...) const)
 	return [=](auto&&... args) { return (c->*m)(std::forward<decltype(args)>(args)...); };
 }
 
+template <typename OArchive, typename IArchive, typename F, typename Tuple>
+std::enable_if_t<std::is_void<hpp::fn_result_of<F>>::value> apply_impl(OArchive&, F&& f, Tuple&& args)
+{
+	hpp::apply(f, args);
+}
+
+template <typename OArchive, typename IArchive, typename F, typename Tuple>
+std::enable_if_t<!std::is_void<hpp::fn_result_of<F>>::value> apply_impl(OArchive& oarchive, F&& f,
+																		Tuple&& args)
+{
+	using archive_t = archive<OArchive, IArchive>;
+	archive_t::pack(oarchive, hpp::apply(f, args));
+}
+
 template <typename OArchive, typename IArchive, typename F>
 inline delegate_t<OArchive(IArchive&)> package_unicast(F&& f)
 {
@@ -177,15 +216,7 @@ inline delegate_t<OArchive(IArchive&)> package_unicast(F&& f)
 		});
 
 		auto oarchive = archive_t::create_oarchive();
-		if_constexpr(std::is_void<hpp::fn_result_of<F>>::value)
-		{
-			hpp::apply(f, args);
-		}
-		else_constexpr
-		{
-			archive_t::pack(oarchive, hpp::apply(f, args));
-		}
-		end_if_constexpr;
+		apply_impl<OArchive, IArchive>(oarchive, f, args);
 		return oarchive;
 	};
 }
@@ -344,7 +375,7 @@ inline void binder<OArchive, IArchive, Key, View, Sentinel>::dispatch_impl(const
 	auto& container_pending = find_it->second.pending;
 	auto& container = find_it->second.active;
 
-	submit_pending(container, container_pending);
+	flush_pending(container, container_pending);
 
 	if(container.empty())
 	{
@@ -393,6 +424,7 @@ inline void binder<OArchive, IArchive, Key, View, Sentinel>::dispatch_impl(const
 	}
 	else_constexpr
 	{
+		// create this outside the loop
 		auto oarchive = archive_t::create_oarchive();
 		archive_t::pack(oarchive, std::forward<Args>(args)...);
 		auto iarchive = archive_t::create_iarchive(std::move(oarchive));
@@ -524,21 +556,21 @@ inline R binder<OArchive, IArchive, Key, View, Sentinel>::call_impl(const View& 
 	try
 	{
 		R res{};
-		// Just for optimization purposes
-		if_constexpr(sizeof...(Args) == 0)
+
+		// check if subscriber expired
+		if(info.sentinel)
 		{
-			// check if subscriber expired
-			if(info.sentinel)
+			// Keep the sentinel locked until end of call
+			auto sentinel = info.sentinel.value().lock();
+			if(!sentinel)
 			{
-				// Keep the sentinel locked until end of call
-				auto sentinel = info.sentinel.value().lock();
-				if(!sentinel)
-				{
-					unicast_list_.erase(it);
-					throw std::runtime_error(detail::diagnostic(__func__, id) +
-											 "invoking a non-binded function and expecting a return value");
-				}
-				else
+				unicast_list_.erase(it);
+				throw std::runtime_error("invoking a non-binded function and expecting a return value");
+			}
+			else
+			{
+				// Just for optimization purposes
+				if_constexpr(sizeof...(Args) == 0)
 				{
 					auto result_oarchive = info.unicast(iarchive_);
 
@@ -551,8 +583,26 @@ inline R binder<OArchive, IArchive, Key, View, Sentinel>::call_impl(const View& 
 						throw std::runtime_error("cannot unpack the expected return type");
 					}
 				}
+				else_constexpr
+				{
+					auto oarchive = archive_t::create_oarchive();
+					archive_t::pack(oarchive, std::forward<Args>(args)...);
+					auto iarchive = archive_t::create_iarchive(std::move(oarchive));
+
+					auto result_oarchive = info.unicast(iarchive);
+					auto result_iarchive = archive_t::create_iarchive(std::move(result_oarchive));
+					if(!archive_t::unpack(result_iarchive, res))
+					{
+						throw std::runtime_error("cannot unpack the expected return type");
+					}
+				}
+				end_if_constexpr;
 			}
-			else
+		}
+		else
+		{
+			// Just for optimization purposes
+			if_constexpr(sizeof...(Args) == 0)
 			{
 				auto result_oarchive = info.unicast(iarchive_);
 
@@ -565,37 +615,12 @@ inline R binder<OArchive, IArchive, Key, View, Sentinel>::call_impl(const View& 
 					throw std::runtime_error("cannot unpack the expected return type");
 				}
 			}
-		}
-		else_constexpr
-		{
-
-			auto oarchive = archive_t::create_oarchive();
-			archive_t::pack(oarchive, std::forward<Args>(args)...);
-			auto iarchive = archive_t::create_iarchive(std::move(oarchive));
-
-			// check if subscriber expired
-			if(info.sentinel)
+			else_constexpr
 			{
-				// Keep the sentinel locked until end of call
-				auto sentinel = info.sentinel.value().lock();
-				if(!sentinel)
-				{
-					unicast_list_.erase(it);
-					throw std::runtime_error(detail::diagnostic(__func__, id) +
-											 "invoking a non-binded function and expecting a return value");
-				}
-				else
-				{
-					auto result_oarchive = info.unicast(iarchive);
-					auto result_iarchive = archive_t::create_iarchive(std::move(result_oarchive));
-					if(!archive_t::unpack(result_iarchive, res))
-					{
-						throw std::runtime_error("cannot unpack the expected return type");
-					}
-				}
-			}
-			else
-			{
+				auto oarchive = archive_t::create_oarchive();
+				archive_t::pack(oarchive, std::forward<Args>(args)...);
+				auto iarchive = archive_t::create_iarchive(std::move(oarchive));
+
 				auto result_oarchive = info.unicast(iarchive);
 				auto result_iarchive = archive_t::create_iarchive(std::move(result_oarchive));
 				if(!archive_t::unpack(result_iarchive, res))
@@ -603,8 +628,8 @@ inline R binder<OArchive, IArchive, Key, View, Sentinel>::call_impl(const View& 
 					throw std::runtime_error("cannot unpack the expected return type");
 				}
 			}
+			end_if_constexpr;
 		}
-		end_if_constexpr;
 
 		return res;
 	}
@@ -628,56 +653,50 @@ inline R binder<OArchive, IArchive, Key, View, Sentinel>::call_impl(const View& 
 	const auto& info = it->second;
 	try
 	{
-		// Just for optimization purposes
-		if_constexpr(sizeof...(Args) == 0)
+		// check if subscriber expired
+		if(info.sentinel)
 		{
-			// check if subscriber expired
-			if(info.sentinel)
+			// Keep sentinel locked until end of call
+			auto sentinel = info.sentinel.value().lock();
+			if(!sentinel)
 			{
-				// Keep sentinel locked until end of call
-				auto sentinel = info.sentinel.value().lock();
-				if(!sentinel)
-				{
-					unicast_list_.erase(it);
-					throw std::runtime_error(detail::diagnostic(__func__, id) +
-											 "invoking a non-binded function");
-				}
-
-				info.unicast(iarchive_);
+				unicast_list_.erase(it);
+				throw std::runtime_error("invoking a non-binded function");
 			}
-			else
+
+			// Just for optimization purposes
+			if_constexpr(sizeof...(Args) == 0)
 			{
 				info.unicast(iarchive_);
+				archive_t::rewind(iarchive_);
 			}
-			// rewind the internal archive when using it
-			archive_t::rewind(iarchive_);
+			else_constexpr
+			{
+				auto oarchive = archive_t::create_oarchive();
+				archive_t::pack(oarchive, std::forward<Args>(args)...);
+				auto iarchive = archive_t::create_iarchive(std::move(oarchive));
+				info.unicast(iarchive);
+			}
+			end_if_constexpr;
 		}
-		else_constexpr
+		else
 		{
-			auto oarchive = archive_t::create_oarchive();
-			archive_t::pack(oarchive, std::forward<Args>(args)...);
-			auto iarchive = archive_t::create_iarchive(std::move(oarchive));
-
-			// check if subscriber expired
-			if(info.sentinel)
+			// Just for optimization purposes
+			if_constexpr(sizeof...(Args) == 0)
 			{
-				// Keep sentinel locked until end of call
-				auto sentinel = info.sentinel.value().lock();
-				if(!sentinel)
-				{
-					unicast_list_.erase(it);
-					throw std::runtime_error(detail::diagnostic(__func__, id) +
-											 "invoking a non-binded function");
-				}
-
+				info.unicast(iarchive_);
+				archive_t::rewind(iarchive_);
+			}
+			else_constexpr
+			{
+				auto oarchive = archive_t::create_oarchive();
+				archive_t::pack(oarchive, std::forward<Args>(args)...);
+				auto iarchive = archive_t::create_iarchive(std::move(oarchive));
 				info.unicast(iarchive);
 			}
-			else
-			{
-				info.unicast(iarchive);
-			}
+			end_if_constexpr;
 		}
-		end_if_constexpr;
+		// rewind the internal archive when using it
 	}
 	catch(const std::exception& e)
 	{
@@ -693,20 +712,21 @@ void binder<OArchive, IArchive, Key, View, Sentinel>::clear()
 }
 
 template <typename OArchive, typename IArchive, typename Key, typename View, typename Sentinel>
-void binder<OArchive, IArchive, Key, View, Sentinel>::submit_pending()
+void binder<OArchive, IArchive, Key, View, Sentinel>::flush_pending()
 {
 	for(auto& kvp : multicast_list_)
 	{
 		auto& container_pending = kvp.second.pending;
 		auto& container = kvp.second.active;
 
-		submit_pending(container, container_pending);
+		flush_pending(container, container_pending);
 	}
 }
 
 template <typename OArchive, typename IArchive, typename Key, typename View, typename Sentinel>
-inline void binder<OArchive, IArchive, Key, View, Sentinel>::submit_pending(
-	std::vector<multicast_info>& container, std::vector<multicast_info>& container_pending)
+inline void
+binder<OArchive, IArchive, Key, View, Sentinel>::flush_pending(std::vector<multicast_info>& container,
+															   std::vector<multicast_info>& container_pending)
 {
 	if(!container_pending.empty())
 	{

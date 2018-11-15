@@ -50,7 +50,11 @@ void test_binder(const std::string& test, int calls, int slots, int tests)
 		return a;
 	});
 
-	binder.submit_pending();
+	binder.bind("plugin_on_system_ready2", []() {
+
+	});
+
+	binder.flush_pending();
 
 	// clang-format off
 	suitepp::test(test + " multicast, calls=" + std::to_string(calls) + ", slots=" + std::to_string(slots),
@@ -61,6 +65,7 @@ void test_binder(const std::string& test, int calls, int slots, int tests)
             for(int i = 0; i < calls; ++i)
             {
                 binder.dispatch("plugin_on_system_ready");
+
             }
         };
 
@@ -99,7 +104,7 @@ int main()
 	using anybinder = dyno::binder<dyno::anystream, dyno::anystream, std::string, hpp::string_view>;
 	using anyobject = dyno::object<dyno::anystream, dyno::anystream, std::string, hpp::string_view>;
 
-	constexpr int calls = 1000000;
+	constexpr int calls = 100000;
 	constexpr int tests = 10;
 	constexpr int slots = 100;
 
