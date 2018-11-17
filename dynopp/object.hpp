@@ -36,85 +36,144 @@ public:
 	using proxy_op_t = proxy_op<OArchive, IArchive, Key, View>;
 	friend struct proxy_op<OArchive, IArchive, Key, View>;
 
+	//-----------------------------------------------------------------------------
+	/// Sets a value to the field with name 'id'
+	//-----------------------------------------------------------------------------
 	template <typename T>
-	void set(const View& id, T&& val)
-	{
-		auto oarchive = archive_t::create_oarchive();
-		archive_t::pack(oarchive, std::forward<T>(val));
-		auto find_it = values_.find(id);
-		if(find_it != std::end(values_))
-		{
-			find_it->second = archive_t::create_iarchive(std::move(oarchive));
-		}
-		else
-		{
-			values_[Key(id)] = archive_t::create_iarchive(std::move(oarchive));
-		}
-	}
+	void set(const View& id, T&& val);
 
-	void set(const View& id, std::nullptr_t)
-	{
-		erase(id);
-	}
+	//-----------------------------------------------------------------------------
+	/// Removes a field with name 'id'
+	//-----------------------------------------------------------------------------
+	void set(const View& id, std::nullptr_t);
 
+	//-----------------------------------------------------------------------------
+	/// Tries to retrive a field
+	//-----------------------------------------------------------------------------
 	template <typename T>
-	bool get(const View& id, T& val)
-	{
-		bool exists{};
-		bool unpacked{};
-		std::tie(exists, unpacked) = get_verbose(id, val);
-		return exists;
-	}
+	bool get(const View& id, T& val);
 
-	bool has(const View& id)
-	{
-		auto find_it = values_.find(id);
-		return find_it != std::end(values_);
-	}
+	//-----------------------------------------------------------------------------
+	/// Checks whether a field exists
+	//-----------------------------------------------------------------------------
+	bool has(const View& id) const;
 
-	proxy_op_t operator[](const View& id)
-	{
-		return {id, *this};
-	}
+	//-----------------------------------------------------------------------------
+	/// Tries to retrive a field
+	//-----------------------------------------------------------------------------
+	auto operator[](const View& id) -> proxy_op_t;
 
-	auto& get_values()
-	{
-		return values_;
-	}
-	const auto& get_values() const
-	{
-		return values_;
-	}
+	//-----------------------------------------------------------------------------
+	/// Checks if the object is empty
+	//-----------------------------------------------------------------------------
+	bool empty() const;
+
+	//-----------------------------------------------------------------------------
+	/// Retrieves the internal values
+	//-----------------------------------------------------------------------------
+	auto& get_values();
+	const auto& get_values() const;
 
 private:
 	template <typename T>
-	std::tuple<bool, bool> get_verbose(const View& id, T& val)
-	{
-		using result_type = std::tuple<bool, bool>;
-		auto it = values_.find(id);
-		if(it == std::end(values_))
-		{
-			return result_type{false, false};
-		}
-		auto& iarchive = it->second;
-		bool unpacked = archive_t::unpack(iarchive, val);
-		archive_t::rewind(iarchive);
-		return result_type{true, unpacked};
-	}
+	std::tuple<bool, bool> get_verbose(const View& id, T& val);
+	bool erase(const View& id);
 
-	bool erase(const View& id)
-	{
-		auto it = values_.find(id);
-		if(it == std::end(values_))
-		{
-			return false;
-		}
-
-		values_.erase(it);
-		return true;
-	}
 	std::map<Key, IArchive, std::less<>> values_;
 };
+
+template <typename OArchive, typename IArchive, typename Key, typename View>
+template <typename T>
+void object<OArchive, IArchive, Key, View>::set(const View& id, T&& val)
+{
+	auto oarchive = archive_t::create_oarchive();
+	archive_t::pack(oarchive, std::forward<T>(val));
+	auto find_it = values_.find(id);
+	if(find_it != std::end(values_))
+	{
+		find_it->second = archive_t::create_iarchive(std::move(oarchive));
+	}
+	else
+	{
+		values_[Key(id)] = archive_t::create_iarchive(std::move(oarchive));
+	}
+}
+
+template <typename OArchive, typename IArchive, typename Key, typename View>
+void object<OArchive, IArchive, Key, View>::set(const View& id, std::nullptr_t)
+{
+	erase(id);
+}
+
+template <typename OArchive, typename IArchive, typename Key, typename View>
+template <typename T>
+bool object<OArchive, IArchive, Key, View>::get(const View& id, T& val)
+{
+	bool exists{};
+	bool unpacked{};
+	std::tie(exists, unpacked) = get_verbose(id, val);
+	return exists && unpacked;
+}
+
+template <typename OArchive, typename IArchive, typename Key, typename View>
+bool object<OArchive, IArchive, Key, View>::has(const View& id) const
+{
+	auto find_it = values_.find(id);
+	return find_it != std::end(values_);
+}
+
+template <typename OArchive, typename IArchive, typename Key, typename View>
+auto object<OArchive, IArchive, Key, View>::operator[](const View& id) -> proxy_op_t
+{
+	return {id, *this};
+}
+
+template <typename OArchive, typename IArchive, typename Key, typename View>
+bool object<OArchive, IArchive, Key, View>::empty() const
+{
+	return values_.empty();
+}
+
+template <typename OArchive, typename IArchive, typename Key, typename View>
+auto& object<OArchive, IArchive, Key, View>::get_values()
+{
+	return values_;
+}
+
+template <typename OArchive, typename IArchive, typename Key, typename View>
+const auto& object<OArchive, IArchive, Key, View>::get_values() const
+{
+	return values_;
+}
+
+template <typename OArchive, typename IArchive, typename Key, typename View>
+template <typename T>
+std::tuple<bool, bool> object<OArchive, IArchive, Key, View>::get_verbose(const View& id, T& val)
+{
+	using result_type = std::tuple<bool, bool>;
+	auto it = values_.find(id);
+	if(it == std::end(values_))
+	{
+		return result_type{false, false};
+	}
+	auto& iarchive = it->second;
+	bool unpacked = archive_t::unpack(iarchive, val);
+	archive_t::rewind(iarchive);
+	return result_type{true, unpacked};
+}
+
+template <typename OArchive, typename IArchive, typename Key, typename View>
+bool object<OArchive, IArchive, Key, View>::erase(const View& id)
+{
+	auto it = values_.find(id);
+	if(it == std::end(values_))
+	{
+		return false;
+	}
+
+	values_.erase(it);
+	return true;
+}
 
 template <typename OArchive, typename IArchive, typename Key, typename View>
 struct proxy_op
