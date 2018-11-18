@@ -147,9 +147,6 @@ private:
 
 	/// container with the unicast slots
 	std::map<Key, unicast_info, std::less<>> unicast_list_;
-
-	/// an internal archive used for optimizations
-	IArchive iarchive_{archive_t::create_iarchive(archive_t::create_oarchive())};
 };
 
 namespace detail
@@ -383,89 +380,46 @@ inline void binder<OArchive, IArchive, Key, View, Sentinel>::dispatch_impl(const
 	}
 	bool collect_garbage = false;
 
-	// purely for optimizations
-	if_constexpr(sizeof...(Args) == 0)
-	{
-		for(const auto& info : container)
-		{
-			try
-			{
-				// check if subscriber expired
-				if(info.sentinel)
-				{
-					// Keep sentinel locked until end of call
-					auto sentinel = info.sentinel.value().lock();
-					if(!sentinel)
-					{
-						collect_garbage = true;
-						continue;
-					}
-					else if(lifetime<decltype(sentinel)>::is_paused(sentinel))
-					{
-						continue;
-					}
-					else
-					{
-						info.multicast(iarchive_);
-					}
-				}
-				else
-				{
-					info.multicast(iarchive_);
-				}
+	// create this outside the loop
+	auto oarchive = archive_t::create_oarchive();
+	archive_t::pack(oarchive, std::forward<Args>(args)...);
+	auto iarchive = archive_t::create_iarchive(std::move(oarchive));
 
-				archive_t::rewind(iarchive_);
-			}
-			catch(const std::exception& e)
-			{
-				throw std::runtime_error(detail::diagnostic(__func__, id) + e.what());
-			}
-		}
-	}
-	else_constexpr
+	for(const auto& info : container)
 	{
-		// create this outside the loop
-		auto oarchive = archive_t::create_oarchive();
-		archive_t::pack(oarchive, std::forward<Args>(args)...);
-		auto iarchive = archive_t::create_iarchive(std::move(oarchive));
-
-		for(const auto& info : container)
+		try
 		{
-			try
+			// check if subscriber expired
+			if(info.sentinel)
 			{
-				// check if subscriber expired
-				if(info.sentinel)
+				// Keep sentinel locked until end of call
+				auto sentinel = info.sentinel.value().lock();
+				if(!sentinel)
 				{
-					// Keep sentinel locked until end of call
-					auto sentinel = info.sentinel.value().lock();
-					if(!sentinel)
-					{
-						collect_garbage = true;
-						continue;
-					}
-					else if(lifetime<decltype(sentinel)>::is_paused(sentinel))
-					{
-						continue;
-					}
-					else
-					{
-						info.multicast(iarchive);
-					}
+					collect_garbage = true;
+					continue;
+				}
+				else if(lifetime<decltype(sentinel)>::is_paused(sentinel))
+				{
+					continue;
 				}
 				else
 				{
 					info.multicast(iarchive);
 				}
 			}
-			catch(const std::exception& e)
+			else
 			{
-				throw std::runtime_error(detail::diagnostic(__func__, id) + e.what());
+				info.multicast(iarchive);
 			}
-
-			archive_t::rewind(iarchive);
 		}
+		catch(const std::exception& e)
+		{
+			throw std::runtime_error(detail::diagnostic(__func__, id) + e.what());
+		}
+
+		archive_t::rewind(iarchive);
 	}
-	end_if_constexpr;
 
 	if(collect_garbage)
 	{
@@ -569,54 +523,7 @@ inline R binder<OArchive, IArchive, Key, View, Sentinel>::call_impl(const View& 
 			}
 			else
 			{
-				// Just for optimization purposes
-				if_constexpr(sizeof...(Args) == 0)
-				{
-					auto result_oarchive = info.unicast(iarchive_);
 
-					// rewind the internal archive when using it
-					archive_t::rewind(iarchive_);
-
-					auto result_iarchive = archive_t::create_iarchive(std::move(result_oarchive));
-					if(!archive_t::unpack(result_iarchive, res))
-					{
-						throw std::runtime_error("cannot unpack the expected return type");
-					}
-				}
-				else_constexpr
-				{
-					auto oarchive = archive_t::create_oarchive();
-					archive_t::pack(oarchive, std::forward<Args>(args)...);
-					auto iarchive = archive_t::create_iarchive(std::move(oarchive));
-
-					auto result_oarchive = info.unicast(iarchive);
-					auto result_iarchive = archive_t::create_iarchive(std::move(result_oarchive));
-					if(!archive_t::unpack(result_iarchive, res))
-					{
-						throw std::runtime_error("cannot unpack the expected return type");
-					}
-				}
-				end_if_constexpr;
-			}
-		}
-		else
-		{
-			// Just for optimization purposes
-			if_constexpr(sizeof...(Args) == 0)
-			{
-				auto result_oarchive = info.unicast(iarchive_);
-
-				// rewind the internal archive when using it
-				archive_t::rewind(iarchive_);
-
-				auto result_iarchive = archive_t::create_iarchive(std::move(result_oarchive));
-				if(!archive_t::unpack(result_iarchive, res))
-				{
-					throw std::runtime_error("cannot unpack the expected return type");
-				}
-			}
-			else_constexpr
-			{
 				auto oarchive = archive_t::create_oarchive();
 				archive_t::pack(oarchive, std::forward<Args>(args)...);
 				auto iarchive = archive_t::create_iarchive(std::move(oarchive));
@@ -628,7 +535,20 @@ inline R binder<OArchive, IArchive, Key, View, Sentinel>::call_impl(const View& 
 					throw std::runtime_error("cannot unpack the expected return type");
 				}
 			}
-			end_if_constexpr;
+		}
+		else
+		{
+
+			auto oarchive = archive_t::create_oarchive();
+			archive_t::pack(oarchive, std::forward<Args>(args)...);
+			auto iarchive = archive_t::create_iarchive(std::move(oarchive));
+
+			auto result_oarchive = info.unicast(iarchive);
+			auto result_iarchive = archive_t::create_iarchive(std::move(result_oarchive));
+			if(!archive_t::unpack(result_iarchive, res))
+			{
+				throw std::runtime_error("cannot unpack the expected return type");
+			}
 		}
 
 		return res;
