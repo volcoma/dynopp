@@ -511,6 +511,9 @@ inline R binder<OArchive, IArchive, Key, View, Sentinel>::call_impl(const View& 
 	{
 		R res{};
 
+		auto oarchive = archive_t::create_oarchive();
+		archive_t::pack(oarchive, std::forward<Args>(args)...);
+		auto iarchive = archive_t::create_iarchive(std::move(oarchive));
 		// check if subscriber expired
 		if(info.sentinel)
 		{
@@ -524,10 +527,6 @@ inline R binder<OArchive, IArchive, Key, View, Sentinel>::call_impl(const View& 
 			else
 			{
 
-				auto oarchive = archive_t::create_oarchive();
-				archive_t::pack(oarchive, std::forward<Args>(args)...);
-				auto iarchive = archive_t::create_iarchive(std::move(oarchive));
-
 				auto result_oarchive = info.unicast(iarchive);
 				auto result_iarchive = archive_t::create_iarchive(std::move(result_oarchive));
 				if(!archive_t::unpack(result_iarchive, res))
@@ -538,11 +537,6 @@ inline R binder<OArchive, IArchive, Key, View, Sentinel>::call_impl(const View& 
 		}
 		else
 		{
-
-			auto oarchive = archive_t::create_oarchive();
-			archive_t::pack(oarchive, std::forward<Args>(args)...);
-			auto iarchive = archive_t::create_iarchive(std::move(oarchive));
-
 			auto result_oarchive = info.unicast(iarchive);
 			auto result_iarchive = archive_t::create_iarchive(std::move(result_oarchive));
 			if(!archive_t::unpack(result_iarchive, res))
@@ -573,6 +567,9 @@ inline R binder<OArchive, IArchive, Key, View, Sentinel>::call_impl(const View& 
 	const auto& info = it->second;
 	try
 	{
+		auto oarchive = archive_t::create_oarchive();
+		archive_t::pack(oarchive, std::forward<Args>(args)...);
+		auto iarchive = archive_t::create_iarchive(std::move(oarchive));
 		// check if subscriber expired
 		if(info.sentinel)
 		{
@@ -584,17 +581,10 @@ inline R binder<OArchive, IArchive, Key, View, Sentinel>::call_impl(const View& 
 				throw std::runtime_error("invoking a non-binded function");
 			}
 
-			auto oarchive = archive_t::create_oarchive();
-			archive_t::pack(oarchive, std::forward<Args>(args)...);
-			auto iarchive = archive_t::create_iarchive(std::move(oarchive));
 			info.unicast(iarchive);
 		}
 		else
 		{
-
-			auto oarchive = archive_t::create_oarchive();
-			archive_t::pack(oarchive, std::forward<Args>(args)...);
-			auto iarchive = archive_t::create_iarchive(std::move(oarchive));
 			info.unicast(iarchive);
 		}
 		// rewind the internal archive when using it
