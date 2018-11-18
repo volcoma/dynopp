@@ -584,37 +584,18 @@ inline R binder<OArchive, IArchive, Key, View, Sentinel>::call_impl(const View& 
 				throw std::runtime_error("invoking a non-binded function");
 			}
 
-			// Just for optimization purposes
-			if_constexpr(sizeof...(Args) == 0)
-			{
-				info.unicast(iarchive_);
-				archive_t::rewind(iarchive_);
-			}
-			else_constexpr
-			{
-				auto oarchive = archive_t::create_oarchive();
-				archive_t::pack(oarchive, std::forward<Args>(args)...);
-				auto iarchive = archive_t::create_iarchive(std::move(oarchive));
-				info.unicast(iarchive);
-			}
-			end_if_constexpr;
+			auto oarchive = archive_t::create_oarchive();
+			archive_t::pack(oarchive, std::forward<Args>(args)...);
+			auto iarchive = archive_t::create_iarchive(std::move(oarchive));
+			info.unicast(iarchive);
 		}
 		else
 		{
-			// Just for optimization purposes
-			if_constexpr(sizeof...(Args) == 0)
-			{
-				info.unicast(iarchive_);
-				archive_t::rewind(iarchive_);
-			}
-			else_constexpr
-			{
-				auto oarchive = archive_t::create_oarchive();
-				archive_t::pack(oarchive, std::forward<Args>(args)...);
-				auto iarchive = archive_t::create_iarchive(std::move(oarchive));
-				info.unicast(iarchive);
-			}
-			end_if_constexpr;
+
+			auto oarchive = archive_t::create_oarchive();
+			archive_t::pack(oarchive, std::forward<Args>(args)...);
+			auto iarchive = archive_t::create_iarchive(std::move(oarchive));
+			info.unicast(iarchive);
 		}
 		// rewind the internal archive when using it
 	}
