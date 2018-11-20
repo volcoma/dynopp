@@ -99,10 +99,43 @@ bool try_implicit_cast(const hpp::any& operand, To& result)
 
 struct anystream
 {
+	using storage_t = std::vector<hpp::any>;
+	anystream() = default;
+	anystream(const anystream& rhs)
+		: internal_storage(*rhs.work_storage)
+		, work_storage(std::addressof(internal_storage))
+	{
+	}
+	anystream(anystream&& rhs) noexcept
+		: internal_storage(std::move(rhs.internal_storage))
+		, work_storage(std::addressof(internal_storage))
+	{
+	}
+
+	anystream& operator=(const anystream& rhs)
+	{
+		internal_storage = (*rhs.work_storage);
+		work_storage = std::addressof(internal_storage);
+
+		return *this;
+	}
+	anystream& operator=(anystream&& rhs) noexcept
+	{
+		internal_storage = std::move(rhs.internal_storage);
+		work_storage = std::addressof(internal_storage);
+
+		return *this;
+	}
+	// create from external storage
+	anystream(const storage_t& s)
+		: work_storage(&s)
+	{
+	}
+
 	template <typename T>
 	anystream& operator<<(T&& val) noexcept
 	{
-		storage.emplace_back(std::forward<T>(val));
+		const_cast<storage_t*>(work_storage)->emplace_back(std::forward<T>(val));
 		return *this;
 	}
 
@@ -113,9 +146,9 @@ struct anystream
 		{
 			return *this;
 		}
-		if(idx < storage.size())
+		if(idx < work_storage->size())
 		{
-			const auto& any_obj = storage[idx++];
+			const auto& any_obj = (*work_storage)[idx++];
 			is_ok &= try_implicit_cast(any_obj, val);
 		}
 		else
@@ -137,8 +170,14 @@ struct anystream
 		return is_ok;
 	}
 
+    bool has_external_storage() const
+    {
+        return work_storage != std::addressof(internal_storage);
+    }
+
 	std::size_t idx = 0;
 	bool is_ok = true;
-	std::vector<hpp::any> storage;
+	storage_t internal_storage;
+	const storage_t* work_storage{std::addressof(internal_storage)};
 };
 }

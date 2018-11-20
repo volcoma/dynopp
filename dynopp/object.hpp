@@ -34,6 +34,7 @@ struct object
 public:
 	using archive_t = archive<OArchive, IArchive>;
 	using proxy_op_t = proxy_op<OArchive, IArchive, Key, View>;
+	using container_t = std::map<Key, typename archive_t::storage_t, std::less<>>;
 	friend struct proxy_op<OArchive, IArchive, Key, View>;
 
 	//-----------------------------------------------------------------------------
@@ -51,7 +52,7 @@ public:
 	/// Tries to retrive a field
 	//-----------------------------------------------------------------------------
 	template <typename T>
-	bool get(const View& id, T& val);
+	bool get(const View& id, T& val) const;
 
 	//-----------------------------------------------------------------------------
 	/// Checks whether a field exists
@@ -71,15 +72,15 @@ public:
 	//-----------------------------------------------------------------------------
 	/// Retrieves the internal values
 	//-----------------------------------------------------------------------------
-	auto& get_values();
-	const auto& get_values() const;
+	auto get_values() -> container_t&;
+	auto get_values() const -> const container_t&;
 
 private:
 	template <typename T>
-	std::tuple<bool, bool> get_verbose(const View& id, T& val);
+	std::tuple<bool, bool> get_verbose(const View& id, T& val) const;
 	bool erase(const View& id);
 
-	std::map<Key, IArchive, std::less<>> values_;
+	container_t values_;
 };
 
 template <typename OArchive, typename IArchive, typename Key, typename View>
@@ -91,11 +92,11 @@ void object<OArchive, IArchive, Key, View>::set(const View& id, T&& val)
 	auto find_it = values_.find(id);
 	if(find_it != std::end(values_))
 	{
-		find_it->second = archive_t::create_iarchive(std::move(oarchive));
+		find_it->second = archive_t::get_storage(std::move(oarchive));
 	}
 	else
 	{
-		values_[Key(id)] = archive_t::create_iarchive(std::move(oarchive));
+		values_.emplace(Key(id), archive_t::get_storage(std::move(oarchive)));
 	}
 }
 
@@ -107,7 +108,7 @@ void object<OArchive, IArchive, Key, View>::set(const View& id, std::nullptr_t)
 
 template <typename OArchive, typename IArchive, typename Key, typename View>
 template <typename T>
-bool object<OArchive, IArchive, Key, View>::get(const View& id, T& val)
+bool object<OArchive, IArchive, Key, View>::get(const View& id, T& val) const
 {
 	bool exists{};
 	bool unpacked{};
@@ -135,20 +136,20 @@ bool object<OArchive, IArchive, Key, View>::empty() const
 }
 
 template <typename OArchive, typename IArchive, typename Key, typename View>
-auto& object<OArchive, IArchive, Key, View>::get_values()
+auto object<OArchive, IArchive, Key, View>::get_values() -> container_t&
 {
 	return values_;
 }
 
 template <typename OArchive, typename IArchive, typename Key, typename View>
-const auto& object<OArchive, IArchive, Key, View>::get_values() const
+auto object<OArchive, IArchive, Key, View>::get_values() const -> const container_t&
 {
 	return values_;
 }
 
 template <typename OArchive, typename IArchive, typename Key, typename View>
 template <typename T>
-std::tuple<bool, bool> object<OArchive, IArchive, Key, View>::get_verbose(const View& id, T& val)
+std::tuple<bool, bool> object<OArchive, IArchive, Key, View>::get_verbose(const View& id, T& val) const
 {
 	using result_type = std::tuple<bool, bool>;
 	auto it = values_.find(id);
@@ -156,9 +157,9 @@ std::tuple<bool, bool> object<OArchive, IArchive, Key, View>::get_verbose(const 
 	{
 		return result_type{false, false};
 	}
-	auto& iarchive = it->second;
+	const auto& storage = it->second;
+	auto iarchive = archive_t::create_iarchive(storage);
 	bool unpacked = archive_t::unpack(iarchive, val);
-	archive_t::rewind(iarchive);
 	return result_type{true, unpacked};
 }
 
@@ -226,7 +227,7 @@ public:
 	}
 
 	template <typename T>
-	T value_or(T&& default_val)
+	T value_or(T&& default_val) const
 	{
 		T val{};
 		if(obj_.get(key_, val))

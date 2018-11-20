@@ -10,7 +10,7 @@ struct archive<anystream, anystream>
 {
 	using oarchive_t = anystream;
 	using iarchive_t = anystream;
-
+	using storage_t = oarchive_t::storage_t;
 	static oarchive_t create_oarchive()
 	{
 		return {};
@@ -19,11 +19,22 @@ struct archive<anystream, anystream>
 	{
 		return std::move(oarchive);
 	}
-
+	static storage_t get_storage(oarchive_t&& oarchive)
+	{
+		if(oarchive.has_external_storage())
+		{
+			return *oarchive.work_storage;
+		}
+		return std::move(oarchive.internal_storage);
+	}
+	static iarchive_t create_iarchive(const storage_t& storage)
+	{
+		return storage;
+	}
 	template <typename... Args>
 	static void pack(oarchive_t& oarchive, Args&&... args)
 	{
-		oarchive.storage.reserve(sizeof...(Args));
+		oarchive.internal_storage.reserve(sizeof...(Args));
 
 		hpp::for_each(std::forward_as_tuple(std::forward<Args>(args)...),
 					  [&oarchive](auto&& arg) { oarchive << std::forward<decltype(arg)>(arg); });

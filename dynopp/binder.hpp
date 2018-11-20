@@ -258,7 +258,8 @@ slot_t binder<OArchive, IArchive, Key, View, Sentinel>::connect(const View& id, 
 	static_assert(std::is_void<hpp::fn_result_of<F>>::value,
 				  "signals cannot have a return type different from void");
 
-	auto& container = multicast_list_[Key(id)];
+	auto emp = multicast_list_.emplace(Key(id), slots{});
+	auto& container = emp.first->second;
 	container.pending.emplace_back();
 	auto& info = container.pending.back();
 	info.priority = priority;
@@ -276,7 +277,8 @@ slot_t binder<OArchive, IArchive, Key, View, Sentinel>::connect(const View& id, 
 	static_assert(std::is_void<hpp::fn_result_of<F>>::value,
 				  "signals cannot have a return type different from void");
 
-	auto& container = multicast_list_[Key(id)];
+	auto emp = multicast_list_.emplace(Key(id), slots{});
+	auto& container = emp.first->second;
 	container.pending.emplace_back();
 	auto& info = container.pending.back();
 	info.priority = priority;
@@ -294,7 +296,8 @@ slot_t binder<OArchive, IArchive, Key, View, Sentinel>::connect(const View& id, 
 	static_assert(std::is_void<hpp::fn_result_of<F>>::value,
 				  "signals cannot have a return type different from void");
 
-	auto& container = multicast_list_[Key(id)];
+	auto emp = multicast_list_.emplace(Key(id), slots{});
+	auto& container = emp.first->second;
 	container.pending.emplace_back();
 	auto& info = container.pending.back();
 	info.priority = priority;
@@ -314,7 +317,8 @@ slot_t binder<OArchive, IArchive, Key, View, Sentinel>::connect(const View& id, 
 	static_assert(std::is_void<hpp::fn_result_of<F>>::value,
 				  "signals cannot have a return type different from void");
 
-	auto& container = multicast_list_[Key(id)];
+	auto emp = multicast_list_.emplace(Key(id), slots{});
+	auto& container = emp.first->second;
 	container.pending.emplace_back();
 	auto& info = container.pending.back();
 	info.priority = priority;
@@ -439,7 +443,8 @@ template <typename OArchive, typename IArchive, typename Key, typename View, typ
 template <typename F>
 void binder<OArchive, IArchive, Key, View, Sentinel>::bind(const View& id, F&& f)
 {
-	auto& info = unicast_list_[Key(id)];
+	auto emp = unicast_list_.emplace(Key(id), unicast_info{});
+	auto& info = emp.first->second;
 	info.unicast = detail::package_unicast<OArchive, IArchive>(std::forward<F>(f));
 }
 
@@ -447,7 +452,8 @@ template <typename OArchive, typename IArchive, typename Key, typename View, typ
 template <typename C, typename F>
 void binder<OArchive, IArchive, Key, View, Sentinel>::bind(const View& id, C* const object_ptr, F&& f)
 {
-	auto& info = unicast_list_[Key(id)];
+	auto emp = unicast_list_.emplace(id, unicast_info{});
+	auto& info = emp.first->second;
 	info.unicast = detail::package_unicast<OArchive, IArchive>(object_ptr, std::forward<F>(f));
 }
 
@@ -455,7 +461,8 @@ template <typename OArchive, typename IArchive, typename Key, typename View, typ
 template <typename F>
 void binder<OArchive, IArchive, Key, View, Sentinel>::bind(const View& id, const Sentinel& sentinel, F&& f)
 {
-	auto& info = unicast_list_[Key(id)];
+	auto emp = unicast_list_.emplace(Key(id), unicast_info{});
+	auto& info = emp.first->second;
 	info.sentinel = sentinel;
 	info.unicast = detail::package_unicast<OArchive, IArchive>(std::forward<F>(f));
 }
@@ -465,7 +472,8 @@ template <typename C, typename F>
 void binder<OArchive, IArchive, Key, View, Sentinel>::bind(const View& id, const Sentinel& sentinel,
 														   C* const object_ptr, F&& f)
 {
-	auto& info = unicast_list_[Key(id)];
+	auto emp = unicast_list_.emplace(Key(id), unicast_info{});
+	auto& info = emp.first->second;
 	info.sentinel = sentinel;
 	info.unicast = detail::package_unicast<OArchive, IArchive>(object_ptr, std::forward<F>(f));
 }

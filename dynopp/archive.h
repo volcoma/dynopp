@@ -12,11 +12,14 @@ struct archive
 {
 	using oarchive_t = OArchive;
 	using iarchive_t = IArchive;
+	using storage_t = typename oarchive_t::storage_t;
 
 	static_assert(sizeof(oarchive_t) == 0 || sizeof(iarchive_t) == 0, "Specialization required!");
 
 	static oarchive_t create_oarchive();
 	static iarchive_t create_iarchive(oarchive_t&&);
+	static iarchive_t create_iarchive(const storage_t& storage);
+	static storage_t get_storage(oarchive_t&& oarchive);
 
 	static void rewind(iarchive_t&);
 
