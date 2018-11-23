@@ -205,10 +205,10 @@ public:
 			{
 				return val;
 			}
-			throw std::invalid_argument("\"" + key_ + "\" - could not unpack to the expected type");
+			throw std::invalid_argument(to_string(key_) + " - could not unpack to the expected type");
 		}
 
-		throw std::out_of_range("\"" + key_ + "\" - no such field exists");
+		throw std::out_of_range(to_string(key_) + " - no such field exists");
 	}
 
 	template <typename T>

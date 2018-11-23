@@ -3,6 +3,7 @@
 #include <memory>
 #include <type_traits>
 #include <utility>
+#include "utility.hpp"
 
 namespace dyno
 {
@@ -51,4 +52,5 @@ using slot_t = std::uint64_t;
 
 template <typename T>
 using delegate_t = std::function<T>;
+
 }

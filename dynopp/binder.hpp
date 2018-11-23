@@ -159,7 +159,7 @@ inline std::string diagnostic(const char* func, const T& val)
 	os << "binder.";
 	os << func;
 	os << "( \"";
-	os << val;
+	os << to_string(val);
 	os << "\" ) : ";
 	return os.str();
 }
