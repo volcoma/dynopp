@@ -345,7 +345,7 @@ void binder<OArchive, IArchive, Key, View, Sentinel>::disconnect(const View& id,
 		{
 			// just invalidate the sentinel.
 			auto& info = *it;
-			info.sentinel = {};
+			info.sentinel = Sentinel{};
 		}
 		else
 		{
