@@ -30,6 +30,7 @@ template <typename OArchive, typename IArchive, typename Key = std::string, type
 struct object
 {
 	static_assert(std::is_constructible<Key, View>::value, "key type must be constructable from view type");
+	static_assert(std::is_constructible<View, Key>::value, "view type must be constructable from key type");
 
 public:
 	using archive_t = archive<OArchive, IArchive>;
@@ -119,8 +120,7 @@ bool object<OArchive, IArchive, Key, View>::get(const View& id, T& val) const
 template <typename OArchive, typename IArchive, typename Key, typename View>
 bool object<OArchive, IArchive, Key, View>::has(const View& id) const
 {
-	auto find_it = values_.find(id);
-	return find_it != std::end(values_);
+	return values_.find(id) != std::end(values_);
 }
 
 template <typename OArchive, typename IArchive, typename Key, typename View>

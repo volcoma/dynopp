@@ -136,9 +136,10 @@ private:
 	};
 	struct slots
 	{
-		uint32_t depth{0};
 		std::vector<multicast_info> active;
 		std::vector<multicast_info> pending;
+		uint32_t depth{0};
+		bool collect_garbage{false};
 	};
 	void flush_pending(std::vector<multicast_info>& container,
 					   std::vector<multicast_info>& container_pending);
@@ -337,6 +338,7 @@ void binder<OArchive, IArchive, Key, View, Sentinel>::disconnect(const View& id,
 	if(find_it != std::end(multicast_list_))
 	{
 		const auto& depth = find_it->second.depth;
+		auto& collect_garbage = find_it->second.collect_garbage;
 		auto& container = find_it->second.active;
 		auto& container_pending = find_it->second.pending;
 		const auto predicate = [slot_id](const auto& info) { return info.id == slot_id; };
@@ -364,6 +366,7 @@ void binder<OArchive, IArchive, Key, View, Sentinel>::disconnect(const View& id,
 					// just invalidate the sentinel.
 					auto& info = *it;
 					info.sentinel = Sentinel{};
+					collect_garbage = true;
 					return true;
 				}
 			}
@@ -401,14 +404,13 @@ inline void binder<OArchive, IArchive, Key, View, Sentinel>::dispatch_impl(const
 	auto& depth = find_it->second.depth;
 	auto& container_pending = find_it->second.pending;
 	auto& container = find_it->second.active;
-
+	auto& collect_garbage = find_it->second.collect_garbage;
 	flush_pending(container, container_pending);
 
 	if(container.empty())
 	{
 		return;
 	}
-	bool collect_garbage = false;
 
 	// create this outside the loop
 	auto oarchive = archive_t::create_oarchive();
@@ -456,10 +458,12 @@ inline void binder<OArchive, IArchive, Key, View, Sentinel>::dispatch_impl(const
 
 	if(collect_garbage)
 	{
+		collect_garbage = false;
 		container.erase(
 			std::remove_if(std::begin(container), std::end(container),
 						   [](const auto& info) { return info.sentinel && info.sentinel.value().expired(); }),
 			std::end(container));
+		// if it was the last entry just remove it from the list
 		if(container.empty())
 		{
 			multicast_list_.erase(find_it);

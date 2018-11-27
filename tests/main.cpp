@@ -7,8 +7,9 @@
 template <typename T>
 void test_object(const std::string& test, int calls, int tests)
 {
-	suitepp::test(test + ", calls=" + std::to_string(calls), [&]() {
-
+	// clang-format off
+	suitepp::test(test + ", calls=" + std::to_string(calls), [&]()
+    {
 		auto code = [&]() {
 			for(int i = 0; i < calls; ++i)
 			{
@@ -28,8 +29,8 @@ void test_object(const std::string& test, int calls, int tests)
 		};
 
 		EXPECT_NOTHROWS(code()).repeat(tests);
-
 	});
+	// clang-format on
 }
 
 template <typename T>
@@ -50,10 +51,6 @@ void test_binder(const std::string& test, int calls, int slots, int tests)
 		return a;
 	});
 
-	binder.bind("plugin_on_system_ready2", []() {
-
-	});
-
 	binder.flush_pending();
 
 	// clang-format off
@@ -70,12 +67,12 @@ void test_binder(const std::string& test, int calls, int slots, int tests)
         };
 
         EXPECT_NOTHROWS(code()).repeat(tests);
-
 	});
 
-	suitepp::test(test + " unicast without return, calls=" + std::to_string(calls), [&]() {
-
-		auto code = [&]() {
+	suitepp::test(test + " unicast without return, calls=" + std::to_string(calls), [&]()
+    {
+		auto code = [&]()
+        {
 			for(int i = 0; i < calls; ++i)
 			{
 				binder.call("plugin_on_system_ready");
@@ -85,9 +82,11 @@ void test_binder(const std::string& test, int calls, int slots, int tests)
 		EXPECT_NOTHROWS(code()).repeat(tests);
 	});
 
-	suitepp::test(test + " unicast with return, calls=" + std::to_string(calls), [&]() {
+	suitepp::test(test + " unicast with return, calls=" + std::to_string(calls), [&]()
+    {
 
-		auto code = [&]() {
+		auto code = [&]()
+        {
 			for(int i = 0; i < calls; ++i)
 			{
 				binder.template call<int>("plugin_on_system_ready");
@@ -101,15 +100,35 @@ void test_binder(const std::string& test, int calls, int slots, int tests)
 
 int main()
 {
-	using anybinder = dyno::binder<dyno::anystream, dyno::anystream, std::string, hpp::string_view>;
-	using anyobject = dyno::object<dyno::anystream, dyno::anystream, std::string, hpp::string_view>;
-
-	constexpr int calls = 100000;
+	constexpr int calls = 1000000;
 	constexpr int tests = 10;
 	constexpr int slots = 100;
 
-	test_binder<anybinder>("any binder", calls, slots, tests);
-	test_object<anyobject>("any object", calls, tests);
+
+    {
+		using binder = dyno::binder<dyno::anystream, dyno::anystream, std::string>;
+		test_binder<binder>("any binder string", calls, slots, tests);
+
+        using object = dyno::object<dyno::anystream, dyno::anystream, std::string>;
+		test_object<object>("any object string", calls, tests);
+	}
+
+	{
+		using binder = dyno::binder<dyno::anystream, dyno::anystream, std::string, hpp::string_view>;
+		test_binder<binder>("any binder string_view", calls, slots, tests);
+
+        using object = dyno::object<dyno::anystream, dyno::anystream, std::string, hpp::string_view>;
+		test_object<object>("any object string_view", calls, tests);
+	}
+
+	{
+		using binder = dyno::binder<dyno::anystream, dyno::anystream, std::string, const char*>;
+		test_binder<binder>("any binder const char*", calls, slots, tests);
+
+        //using object = dyno::object<dyno::anystream, dyno::anystream, std::string, const char*>;
+		//test_object<object>("any object const char*", calls, tests);
+	}
+
 
 	return 0;
 }
