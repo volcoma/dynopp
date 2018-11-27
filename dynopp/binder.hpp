@@ -136,6 +136,7 @@ private:
 	};
 	struct slots
 	{
+		uint32_t depth{0};
 		std::vector<multicast_info> active;
 		std::vector<multicast_info> pending;
 	};
@@ -335,19 +336,43 @@ void binder<OArchive, IArchive, Key, View, Sentinel>::disconnect(const View& id,
 	auto find_it = multicast_list_.find(id);
 	if(find_it != std::end(multicast_list_))
 	{
-		const auto predicate = [slot_id](const auto& info) { return info.id == slot_id; };
-		auto& container_pending = find_it->second.pending;
+		const auto& depth = find_it->second.depth;
 		auto& container = find_it->second.active;
+		auto& container_pending = find_it->second.pending;
+		const auto predicate = [slot_id](const auto& info) { return info.id == slot_id; };
 
-		// First check the active slots
-		auto it = std::find_if(std::begin(container), std::end(container), predicate);
-		if(it != std::end(container))
-		{
-			// just invalidate the sentinel.
-			auto& info = *it;
-			info.sentinel = Sentinel{};
-		}
-		else
+		auto remove_from_active = [&]() {
+			if(depth == 0)
+			{
+				auto it = std::remove_if(std::begin(container), std::end(container), predicate);
+				if(it != std::end(container))
+				{
+					container.erase(it, std::end(container));
+
+					if(container.empty())
+					{
+						multicast_list_.erase(find_it);
+					}
+					return true;
+				}
+			}
+			else
+			{
+				auto it = std::find_if(std::begin(container), std::end(container), predicate);
+				if(it != std::end(container))
+				{
+					// just invalidate the sentinel.
+					auto& info = *it;
+					info.sentinel = Sentinel{};
+					return true;
+				}
+			}
+
+			return false;
+		};
+
+		// First try the active slots
+		if(!remove_from_active())
 		{
 			// check and erase from pending
 			container_pending.erase(
@@ -373,6 +398,7 @@ inline void binder<OArchive, IArchive, Key, View, Sentinel>::dispatch_impl(const
 	{
 		return;
 	}
+	auto& depth = find_it->second.depth;
 	auto& container_pending = find_it->second.pending;
 	auto& container = find_it->second.active;
 
@@ -389,6 +415,7 @@ inline void binder<OArchive, IArchive, Key, View, Sentinel>::dispatch_impl(const
 	archive_t::pack(oarchive, std::forward<Args>(args)...);
 	auto iarchive = archive_t::create_iarchive(std::move(oarchive));
 
+	depth++;
 	for(const auto& info : container)
 	{
 		try
@@ -424,6 +451,8 @@ inline void binder<OArchive, IArchive, Key, View, Sentinel>::dispatch_impl(const
 
 		archive_t::rewind(iarchive);
 	}
+
+	depth--;
 
 	if(collect_garbage)
 	{
@@ -595,7 +624,6 @@ inline R binder<OArchive, IArchive, Key, View, Sentinel>::call_impl(const View& 
 		{
 			info.unicast(iarchive);
 		}
-		// rewind the internal archive when using it
 	}
 	catch(const std::exception& e)
 	{
