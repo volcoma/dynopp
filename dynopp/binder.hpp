@@ -238,7 +238,7 @@ inline delegate_t<void(IArchive&)> package_multicast(F&& f)
 		hpp::for_each(args, [&iarchive](auto& element) {
 			if(!archive_t::unpack(iarchive, element))
 			{
-				throw std::runtime_error("cannot not unpack the expected arguments");
+				throw std::runtime_error("cannot not unpack the expected argument types");
 			}
 		});
 
