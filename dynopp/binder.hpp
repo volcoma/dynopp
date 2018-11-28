@@ -351,7 +351,8 @@ void binder<OArchive, IArchive, Key, View, Sentinel>::disconnect(const View& id,
 				{
 					container.erase(it, std::end(container));
 
-					if(container.empty())
+					// if it was the last entry just remove it from the list
+					if(container.empty() && container_pending.empty())
 					{
 						multicast_list_.erase(find_it);
 					}
@@ -417,7 +418,7 @@ inline void binder<OArchive, IArchive, Key, View, Sentinel>::dispatch_impl(const
 	archive_t::pack(oarchive, std::forward<Args>(args)...);
 	auto iarchive = archive_t::create_iarchive(std::move(oarchive));
 
-	depth++;
+	++depth;
 	for(const auto& info : container)
 	{
 		try
@@ -454,9 +455,9 @@ inline void binder<OArchive, IArchive, Key, View, Sentinel>::dispatch_impl(const
 		archive_t::rewind(iarchive);
 	}
 
-	depth--;
+	--depth;
 
-	if(collect_garbage)
+	if(depth == 0 && collect_garbage)
 	{
 		collect_garbage = false;
 		container.erase(
@@ -464,7 +465,7 @@ inline void binder<OArchive, IArchive, Key, View, Sentinel>::dispatch_impl(const
 						   [](const auto& info) { return info.sentinel && info.sentinel.value().expired(); }),
 			std::end(container));
 		// if it was the last entry just remove it from the list
-		if(container.empty())
+		if(container.empty() && container_pending.empty())
 		{
 			multicast_list_.erase(find_it);
 		}
