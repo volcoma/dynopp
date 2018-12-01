@@ -104,12 +104,11 @@ int main()
 	constexpr int tests = 10;
 	constexpr int slots = 100;
 
-
-    {
+	{
 		using binder = dyno::binder<dyno::anystream, dyno::anystream, std::string>;
 		test_binder<binder>("any binder string", calls, slots, tests);
 
-        using object = dyno::object<dyno::anystream, dyno::anystream, std::string>;
+		using object = dyno::object<dyno::anystream, dyno::anystream, std::string>;
 		test_object<object>("any object string", calls, tests);
 	}
 
@@ -117,7 +116,7 @@ int main()
 		using binder = dyno::binder<dyno::anystream, dyno::anystream, std::string, hpp::string_view>;
 		test_binder<binder>("any binder string_view", calls, slots, tests);
 
-        using object = dyno::object<dyno::anystream, dyno::anystream, std::string, hpp::string_view>;
+		using object = dyno::object<dyno::anystream, dyno::anystream, std::string, hpp::string_view>;
 		test_object<object>("any object string_view", calls, tests);
 	}
 
@@ -125,10 +124,9 @@ int main()
 		using binder = dyno::binder<dyno::anystream, dyno::anystream, std::string, const char*>;
 		test_binder<binder>("any binder const char*", calls, slots, tests);
 
-        //using object = dyno::object<dyno::anystream, dyno::anystream, std::string, const char*>;
-		//test_object<object>("any object const char*", calls, tests);
+		// using object = dyno::object<dyno::anystream, dyno::anystream, std::string, const char*>;
+		// test_object<object>("any object const char*", calls, tests);
 	}
-
 
 	return 0;
 }

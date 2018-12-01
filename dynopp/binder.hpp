@@ -397,6 +397,8 @@ template <typename OArchive, typename IArchive, typename Key, typename View, typ
 template <typename... Args>
 inline void binder<OArchive, IArchive, Key, View, Sentinel>::dispatch_impl(const View& id, Args&&... args)
 {
+	constexpr static const auto this_func = "dispatch";
+
 	auto find_it = multicast_list_.find(id);
 	if(find_it == std::end(multicast_list_))
 	{
@@ -449,7 +451,7 @@ inline void binder<OArchive, IArchive, Key, View, Sentinel>::dispatch_impl(const
 		}
 		catch(const std::exception& e)
 		{
-			throw std::runtime_error(detail::diagnostic(__func__, id) + e.what());
+			throw std::runtime_error(detail::diagnostic(this_func, id) + e.what());
 		}
 
 		archive_t::rewind(iarchive);
@@ -541,10 +543,12 @@ inline R binder<OArchive, IArchive, Key, View, Sentinel>::call_impl(const View& 
 {
 	static_assert(!std::is_reference<R>::value, "unsupported return by reference (use return by value)");
 
+	constexpr static const auto this_func = "call";
+
 	auto it = unicast_list_.find(id);
 	if(it == std::end(unicast_list_))
 	{
-		throw std::runtime_error(detail::diagnostic(__func__, id) +
+		throw std::runtime_error(detail::diagnostic(this_func, id) +
 								 "invoking a non-binded function and expecting a return value");
 	}
 	const auto& info = it->second;
@@ -591,7 +595,7 @@ inline R binder<OArchive, IArchive, Key, View, Sentinel>::call_impl(const View& 
 	}
 	catch(const std::exception& e)
 	{
-		throw std::runtime_error(detail::diagnostic(__func__, id) + e.what());
+		throw std::runtime_error(detail::diagnostic(this_func, id) + e.what());
 	}
 }
 
@@ -599,11 +603,13 @@ template <typename OArchive, typename IArchive, typename Key, typename View, typ
 template <typename R, typename... Args, typename std::enable_if_t<std::is_void<R>::value>*>
 inline R binder<OArchive, IArchive, Key, View, Sentinel>::call_impl(const View& id, Args&&... args)
 {
+	constexpr static const auto this_func = "call";
+
 	auto it = unicast_list_.find(id);
 
 	if(it == std::end(unicast_list_))
 	{
-		throw std::runtime_error(detail::diagnostic(__func__, id) + "invoking a non-binded function");
+		throw std::runtime_error(detail::diagnostic(this_func, id) + "invoking a non-binded function");
 	}
 
 	const auto& info = it->second;
@@ -632,7 +638,7 @@ inline R binder<OArchive, IArchive, Key, View, Sentinel>::call_impl(const View& 
 	}
 	catch(const std::exception& e)
 	{
-		throw std::runtime_error(detail::diagnostic(__func__, id) + e.what());
+		throw std::runtime_error(detail::diagnostic(this_func, id) + e.what());
 	}
 }
 
