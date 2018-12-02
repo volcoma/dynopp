@@ -78,8 +78,12 @@ public:
 
 private:
 	template <typename T>
-	std::tuple<bool, bool> get_verbose(const View& id, T& val) const;
-	bool erase(const View& id);
+	std::tuple<bool, bool> get_impl(const View& id, T& val) const;
+
+	template <typename T>
+	void set_impl(const View& id, T&& val);
+
+	bool remove_impl(const View& id);
 
 	container_t values_;
 };
@@ -88,23 +92,13 @@ template <typename OArchive, typename IArchive, typename Key, typename View>
 template <typename T>
 void object<OArchive, IArchive, Key, View>::set(const View& id, T&& val)
 {
-	auto oarchive = archive_t::create_oarchive();
-	archive_t::pack(oarchive, std::forward<T>(val));
-	auto find_it = values_.find(id);
-	if(find_it != std::end(values_))
-	{
-		find_it->second = archive_t::get_storage(std::move(oarchive));
-	}
-	else
-	{
-		values_.emplace(Key(id), archive_t::get_storage(std::move(oarchive)));
-	}
+	set_impl(id, std::forward<T>(val));
 }
 
 template <typename OArchive, typename IArchive, typename Key, typename View>
 void object<OArchive, IArchive, Key, View>::set(const View& id, std::nullptr_t)
 {
-	erase(id);
+	remove_impl(id);
 }
 
 template <typename OArchive, typename IArchive, typename Key, typename View>
@@ -113,7 +107,7 @@ bool object<OArchive, IArchive, Key, View>::get(const View& id, T& val) const
 {
 	bool exists{};
 	bool unpacked{};
-	std::tie(exists, unpacked) = get_verbose(id, val);
+	std::tie(exists, unpacked) = get_impl(id, val);
 	return exists && unpacked;
 }
 
@@ -149,7 +143,24 @@ auto object<OArchive, IArchive, Key, View>::get_values() const -> const containe
 
 template <typename OArchive, typename IArchive, typename Key, typename View>
 template <typename T>
-std::tuple<bool, bool> object<OArchive, IArchive, Key, View>::get_verbose(const View& id, T& val) const
+void object<OArchive, IArchive, Key, View>::set_impl(const View& id, T&& val)
+{
+	auto oarchive = archive_t::create_oarchive();
+	archive_t::pack(oarchive, std::forward<T>(val));
+	auto find_it = values_.find(id);
+	if(find_it != std::end(values_))
+	{
+		find_it->second = archive_t::get_storage(std::move(oarchive));
+	}
+	else
+	{
+		values_.emplace(Key(id), archive_t::get_storage(std::move(oarchive)));
+	}
+}
+
+template <typename OArchive, typename IArchive, typename Key, typename View>
+template <typename T>
+std::tuple<bool, bool> object<OArchive, IArchive, Key, View>::get_impl(const View& id, T& val) const
 {
 	using result_type = std::tuple<bool, bool>;
 	auto it = values_.find(id);
@@ -164,7 +175,7 @@ std::tuple<bool, bool> object<OArchive, IArchive, Key, View>::get_verbose(const 
 }
 
 template <typename OArchive, typename IArchive, typename Key, typename View>
-bool object<OArchive, IArchive, Key, View>::erase(const View& id)
+bool object<OArchive, IArchive, Key, View>::remove_impl(const View& id)
 {
 	auto it = values_.find(id);
 	if(it == std::end(values_))
@@ -198,7 +209,7 @@ public:
 		T val{};
 		bool exists{};
 		bool unpacked{};
-		std::tie(exists, unpacked) = obj_.get_verbose(key_, val);
+		std::tie(exists, unpacked) = obj_.get_impl(key_, val);
 		if(exists)
 		{
 			if(unpacked)
