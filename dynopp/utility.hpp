@@ -81,4 +81,9 @@ std::string to_string(const std::tuple<Types...>& p)
 	s += "}";
 	return s;
 }
+
+std::string to_string(const std::string& p)
+{
+	return "\"" + p + "\"";
+}
 }
