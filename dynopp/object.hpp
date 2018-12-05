@@ -195,16 +195,15 @@ template <typename OArchive, typename IArchive, typename Key, typename View>
 template <typename T>
 auto object_rep<OArchive, IArchive, Key, View>::get(const View& id, T& val) const -> std::tuple<bool, bool>
 {
-	using result_type = std::tuple<bool, bool>;
 	auto it = impl_.find(id);
 	if(it == std::end(impl_))
 	{
-		return result_type{false, false};
+		return std::make_tuple(false, false);
 	}
 	const auto& storage = it->second;
 	auto iarchive = archive_t::create_iarchive(storage);
 	bool unpacked = archive_t::unpack(iarchive, val);
-	return result_type{true, unpacked};
+	return std::make_tuple(true, unpacked);
 }
 
 template <typename OArchive, typename IArchive, typename Key, typename View>

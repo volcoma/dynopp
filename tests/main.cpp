@@ -25,13 +25,13 @@ struct object_rep<nlohmann::json, nlohmann::json, Key, View>
 		}
 		catch(const nlohmann::json::out_of_range&)
 		{
-			return {false, false};
+			return std::make_tuple(false, false);
 		}
 		catch(...)
 		{
-			return {true, false};
+			return std::make_tuple(true, false);
 		}
-		return {true, true};
+		return std::make_tuple(true, true);
 	}
 	auto get(const view_t& id, object_rep& val) const -> std::tuple<bool, bool>
 	{
