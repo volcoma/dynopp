@@ -50,15 +50,19 @@ binder.disconnect("on_some_event", slot_id);
 
 // You can also create a dynamic object type
 // It will behave more or less like a fully dynamic type
-using anyobject = dyno::object<dyno::anystream, dyno::anystream, std::string>;
+using object_rep = dyno::object_rep<dyno::anystream, dyno::anystream, std::string>;
 //you can also provide a view_type for some more optimizaiton
-//using anyobject = dyno::object<dyno::anystream, dyno::anystream, std::string, std::string_view>;
-anyobject obj;
+//using object_rep = dyno::object_rep<dyno::anystream, dyno::anystream, std::string, std::string_view>;
+//or you can change the serialization completely maybe use json or some custom binary format? It's all up to you.
+using object_rep = dyno::object_rep<nlohmann::json, nlohmann::json, std::string, hpp::string_view>;
+using object = dyno::object<object_rep>;
+
+object obj;
 obj["key1"] = 1;
 obj["key2"] = "some_string_data";
 obj["key3"] = std::vector<std::string>{"str1", "str2", "str3"};
 //you can copy it
-anyobject inner = obj;
+object inner = obj;
 //or nest them inside eachother
 obj["key4"] = std::move(inner);
 
@@ -66,7 +70,7 @@ obj["key4"] = std::move(inner);
 int val1 = obj["key1"];
 std::string val2 = obj["key2"];
 std::vector<std::string> val3 = obj["key3"];   
-anyobject val4 = obj["key4"];
+object val4 = obj["key4"];
     
 // this will throw if the key is not present or the value' type cannot be matched
 // again type matching is provided by the user. Look below.
@@ -86,10 +90,11 @@ if(obj.get("key6", val))
 }
 ```
 
-For this all to work out you need to provide a serialize/deserialize customization point
+For the binder to work out you need to provide a serialize/deserialize customization point
 with archives that you are working with. 
-The example above works with an anystream which is basically a vector<std::any>, but can work
+The binder example above works with an anystream which is basically a vector<std::any>, but can work
 with any other binary stream if you provide a specialization
+The anystream is integrated with the library and can be used out of the box.
 ```c++
 namespace dyno
 {
@@ -130,6 +135,80 @@ struct archive<anystream, anystream>
 	}
 };
 }
+
+//This for example is making the object work with nlohman's json library
+//Check out the examples for more information.
+namespace dyno
+{
+template <typename Key, typename View>
+struct object_rep<nlohmann::json, nlohmann::json, Key, View>
+{
+	using key_t = Key;
+	using view_t = View;
+
+	template <typename T>
+	auto get(const view_t& id, T& val) const -> std::tuple<bool, bool>
+	{
+		try
+		{
+			T res = impl_.at(key_t(id));
+			val = std::move(res);
+		}
+		catch(const nlohmann::json::out_of_range&)
+		{
+			return std::make_tuple(false, false);
+		}
+		catch(...)
+		{
+			return std::make_tuple(true, false);
+		}
+		return std::make_tuple(true, true);
+	}
+	auto get(const view_t& id, object_rep& val) const -> std::tuple<bool, bool>
+	{
+		return get(id, val.impl_);
+	}
+
+	template <typename T>
+	auto set(const view_t& id, T&& val) -> std::enable_if_t<!std::is_same<std::decay_t<T>, object_rep>::value>
+	{
+		impl_[key_t(id)] = std::forward<T>(val);
+	}
+
+	template <typename T>
+	auto set(const view_t& id, T&& val) -> std::enable_if_t<std::is_same<std::decay_t<T>, object_rep>::value>
+	{
+		impl_[key_t(id)] = val.impl_;
+	}
+	bool remove(const view_t& id)
+	{
+		impl_.erase(Key(id));
+		return true;
+	}
+
+	bool has(const view_t& id) const
+	{
+		return impl_.find(key_t(id)) != std::end(impl_);
+	}
+
+	bool empty() const
+	{
+		return impl_.empty();
+	}
+
+	auto& get_impl()
+	{
+		return impl_;
+	}
+	const auto& get_impl() const
+	{
+		return impl_;
+	}
+
+	nlohmann::json impl_;
+};
+}
+
 ```
 
 ### Performance
