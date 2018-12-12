@@ -44,8 +44,8 @@ struct object_rep
 
 	bool empty() const;
 
-	auto& get_impl();
-	const auto& get_impl() const;
+	impl_t& get_impl();
+	const impl_t& get_impl() const;
 
 	impl_t impl_;
 };
@@ -219,13 +219,13 @@ bool object_rep<OArchive, IArchive, Key, View>::remove(const View& id)
 	return true;
 }
 template <typename OArchive, typename IArchive, typename Key, typename View>
-auto& object_rep<OArchive, IArchive, Key, View>::get_impl()
+auto object_rep<OArchive, IArchive, Key, View>::get_impl() -> impl_t&
 {
 	return impl_;
 }
 
 template <typename OArchive, typename IArchive, typename Key, typename View>
-const auto& object_rep<OArchive, IArchive, Key, View>::get_impl() const
+auto object_rep<OArchive, IArchive, Key, View>::get_impl() const -> const impl_t&
 {
 	return impl_;
 }
@@ -322,20 +322,7 @@ public:
 	template <typename T>
 	operator T() const
 	{
-		T val{};
-		bool exists{};
-		bool unpacked{};
-		std::tie(exists, unpacked) = obj_.template rep_get<T>(key_, val);
-		if(exists)
-		{
-			if(unpacked)
-			{
-				return val;
-			}
-			throw std::invalid_argument(to_string(key_) + " - could not unpack to the expected type");
-		}
-
-		throw std::out_of_range(to_string(key_) + " - no such field exists");
+		return get<T>();
 	}
 
 	template <typename T>
@@ -362,6 +349,25 @@ public:
 			return val;
 		}
 		return std::forward<T>(default_val);
+	}
+
+	template <typename T>
+	T get() const
+	{
+		T val{};
+		bool exists{};
+		bool unpacked{};
+		std::tie(exists, unpacked) = obj_.template rep_get<T>(key_, val);
+		if(exists)
+		{
+			if(unpacked)
+			{
+				return val;
+			}
+			throw std::invalid_argument(to_string(key_) + " - could not unpack to the expected type");
+		}
+
+		throw std::out_of_range(to_string(key_) + " - no such field exists");
 	}
 
 private:
