@@ -156,7 +156,7 @@ inline std::ostream& operator<<(std::ostream& o, const object_rep<OArchive, IArc
 	}
 	for(const auto& kvp : obj.get_impl())
 	{
-		o << indent_string << to_string(kvp.first) << ": " << to_string(kvp.second) << ",\n";
+		o << indent_string << make_string(kvp.first) << ": " << make_string(kvp.second) << ",\n";
 	}
 	o.write("}\n", 2);
 	return o;
@@ -364,10 +364,10 @@ public:
 			{
 				return val;
 			}
-			throw std::invalid_argument(to_string(key_) + " - could not unpack to the expected type");
+			throw std::invalid_argument(make_string(key_) + " - could not unpack to the expected type");
 		}
 
-		throw std::out_of_range(to_string(key_) + " - no such field exists");
+		throw std::out_of_range(make_string(key_) + " - no such field exists");
 	}
 
 private:
