@@ -29,61 +29,61 @@ using has_ostringstream = hpp::is_detected<ostringstream_expression, T>;
 template <typename T, typename std::enable_if<has_std_to_string<T>::value, int>::type = 0>
 std::string make_string(const T& t)
 {
-    return std::to_string(t);
+	return std::to_string(t);
 }
 
 // 2 - std::to_string is not valid on T, but to_string is
 template <typename T,
-          typename std::enable_if<!has_std_to_string<T>::value && has_to_string<T>::value, int>::type = 0>
+		  typename std::enable_if<!has_std_to_string<T>::value && has_to_string<T>::value, int>::type = 0>
 std::string make_string(const T& t)
 {
-    return to_string(t);
+	return to_string(t);
 }
 
 // 3 - neither std::string nor to_string work on T, let's stream it then
 template <typename T, typename std::enable_if<!has_std_to_string<T>::value && !has_to_string<T>::value &&
-                                                  has_ostringstream<T>::value,
-                                              int>::type = 0>
+												  has_ostringstream<T>::value,
+											  int>::type = 0>
 std::string make_string(const T& t)
 {
-    std::ostringstream oss;
-    oss << t;
-    return oss.str();
+	std::ostringstream oss;
+	oss << t;
+	return oss.str();
 }
 // 4 - nothing available
 template <typename T, typename std::enable_if<!has_std_to_string<T>::value && !has_to_string<T>::value &&
-                                                  !has_ostringstream<T>::value,
-                                              int>::type = 0>
+												  !has_ostringstream<T>::value,
+											  int>::type = 0>
 std::string make_string(const T&)
 {
-    return "??";
+	return "??";
 }
 
 template <typename T, typename U>
 std::string make_string(const std::pair<T, U>& p)
 {
-    return "{" + to_string(p.first) + ", " + to_string(p.second) + "}";
+	return "{" + to_string(p.first) + ", " + to_string(p.second) + "}";
 }
 
 template <typename... Types>
 std::string make_string(const std::tuple<Types...>& p)
 {
-    std::string s = "{";
-    hpp::for_each(p, [&s](const auto& el) {
-        s += to_string(el);
-        s += ", ";
-    });
-    if(s.back() != '{')
-    {
-        s.pop_back();
-        s.pop_back();
-    }
-    s += "}";
-    return s;
+	std::string s = "{";
+	hpp::for_each(p, [&s](const auto& el) {
+		s += to_string(el);
+		s += ", ";
+	});
+	if(s.back() != '{')
+	{
+		s.pop_back();
+		s.pop_back();
+	}
+	s += "}";
+	return s;
 }
 
 inline std::string make_string(const std::string& p)
 {
-    return "\"" + p + "\"";
+	return "\"" + p + "\"";
 }
 }

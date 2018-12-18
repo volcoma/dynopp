@@ -170,10 +170,10 @@ struct anystream
 		return is_ok;
 	}
 
-    bool has_external_storage() const
-    {
-        return work_storage != std::addressof(internal_storage);
-    }
+	bool has_external_storage() const
+	{
+		return work_storage != std::addressof(internal_storage);
+	}
 
 	std::size_t idx = 0;
 	bool is_ok = true;
