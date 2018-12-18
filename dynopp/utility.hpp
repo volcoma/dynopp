@@ -6,7 +6,10 @@
 
 namespace dyno
 {
-
+inline std::string to_string(const std::string& p)
+{
+    return "\"" + p + "\"";
+}
 // 1 - detecting if std::to_string is valid on T
 template <typename T>
 using std_to_string_expression = decltype(std::to_string(std::declval<T>()));
@@ -35,7 +38,7 @@ inline std::string to_string(const T& t)
 // 2 - std::to_string is not valid on T, but to_string is
 template <typename T,
           typename std::enable_if<!has_std_to_string<T>::value && has_to_string<T>::value, int>::type = 0>
-std::string to_string(const T& t)
+inline std::string to_string(const T& t)
 {
     return to_string(t);
 }
@@ -44,7 +47,7 @@ std::string to_string(const T& t)
 template <typename T, typename std::enable_if<!has_std_to_string<T>::value && !has_to_string<T>::value &&
                                                   has_ostringstream<T>::value,
                                               int>::type = 0>
-std::string to_string(const T& t)
+inline std::string to_string(const T& t)
 {
     std::ostringstream oss;
     oss << t;
@@ -54,19 +57,19 @@ std::string to_string(const T& t)
 template <typename T, typename std::enable_if<!has_std_to_string<T>::value && !has_to_string<T>::value &&
                                                   !has_ostringstream<T>::value,
                                               int>::type = 0>
-std::string to_string(const T&)
+inline std::string to_string(const T&)
 {
     return "??";
 }
 
 template <typename T, typename U>
-std::string to_string(const std::pair<T, U>& p)
+inline std::string to_string(const std::pair<T, U>& p)
 {
     return "{" + to_string(p.first) + ", " + to_string(p.second) + "}";
 }
 
 template <typename... Types>
-std::string to_string(const std::tuple<Types...>& p)
+inline std::string to_string(const std::tuple<Types...>& p)
 {
     std::string s = "{";
     hpp::for_each(p, [&s](const auto& el) {
@@ -82,8 +85,4 @@ std::string to_string(const std::tuple<Types...>& p)
     return s;
 }
 
-//inline std::string to_string(const std::string& p)
-//{
-//    return "\"" + p + "\"";
-//}
 }
