@@ -35,7 +35,7 @@ inline std::string to_string(const T& t)
 // 2 - std::to_string is not valid on T, but to_string is
 template <typename T,
           typename std::enable_if<!has_std_to_string<T>::value && has_to_string<T>::value, int>::type = 0>
-inline std::string to_string(const T& t)
+std::string to_string(const T& t)
 {
     return to_string(t);
 }
@@ -44,7 +44,7 @@ inline std::string to_string(const T& t)
 template <typename T, typename std::enable_if<!has_std_to_string<T>::value && !has_to_string<T>::value &&
                                                   has_ostringstream<T>::value,
                                               int>::type = 0>
-inline std::string to_string(const T& t)
+std::string to_string(const T& t)
 {
     std::ostringstream oss;
     oss << t;
@@ -54,19 +54,19 @@ inline std::string to_string(const T& t)
 template <typename T, typename std::enable_if<!has_std_to_string<T>::value && !has_to_string<T>::value &&
                                                   !has_ostringstream<T>::value,
                                               int>::type = 0>
-inline std::string to_string(const T&)
+std::string to_string(const T&)
 {
     return "??";
 }
 
 template <typename T, typename U>
-inline std::string to_string(const std::pair<T, U>& p)
+std::string to_string(const std::pair<T, U>& p)
 {
     return "{" + to_string(p.first) + ", " + to_string(p.second) + "}";
 }
 
 template <typename... Types>
-inline std::string to_string(const std::tuple<Types...>& p)
+std::string to_string(const std::tuple<Types...>& p)
 {
     std::string s = "{";
     hpp::for_each(p, [&s](const auto& el) {
