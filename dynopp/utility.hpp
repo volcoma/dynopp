@@ -6,10 +6,7 @@
 
 namespace dyno
 {
-inline std::string to_string(const std::string& p)
-{
-    return "\"" + p + "\"";
-}
+
 // 1 - detecting if std::to_string is valid on T
 template <typename T>
 using std_to_string_expression = decltype(std::to_string(std::declval<T>()));
@@ -18,7 +15,7 @@ using has_std_to_string = hpp::is_detected<std_to_string_expression, T>;
 
 // 2 - detecting if to_string is valid on T
 template <typename T>
-using to_string_expression = decltype(to_string(std::declval<T>()));
+using to_string_expression = decltype(to_string(std::declval<const T>()));
 template <typename T>
 using has_to_string = hpp::is_detected<to_string_expression, T>;
 
@@ -85,4 +82,8 @@ inline std::string to_string(const std::tuple<Types...>& p)
     return s;
 }
 
+inline std::string to_string(const std::string& p)
+{
+    return "\"" + p + "\"";
+}
 }
