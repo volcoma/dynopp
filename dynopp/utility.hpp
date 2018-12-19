@@ -62,7 +62,7 @@ std::string make_string(const T&)
 template <typename T, typename U>
 std::string make_string(const std::pair<T, U>& p)
 {
-	return "{" + to_string(p.first) + ", " + to_string(p.second) + "}";
+	return "{" + make_string(p.first) + ", " + make_string(p.second) + "}";
 }
 
 template <typename... Types>
@@ -70,7 +70,7 @@ std::string make_string(const std::tuple<Types...>& p)
 {
 	std::string s = "{";
 	hpp::for_each(p, [&s](const auto& el) {
-		s += to_string(el);
+		s += make_string(el);
 		s += ", ";
 	});
 	if(s.back() != '{')
