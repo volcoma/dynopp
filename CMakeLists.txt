@@ -5,7 +5,7 @@ include(CTest)
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/cmake/utility")
 
 option(BUILD_DYNOPP_SHARED "Build as a shared library." ON)
-option(BUILD_DYNOPP_TESTS "Build the tests" OFF)
+option(BUILD_DYNOPP_TESTS "Build the tests" ON)
 option(BUILD_DYNOPP_WITH_CODE_STYLE_CHECKS "Build with code style checks." OFF)
 
 if(BUILD_DYNOPP_TESTS)

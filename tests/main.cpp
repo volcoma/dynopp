@@ -3,7 +3,7 @@
 #include <dynopp/binder.hpp>
 #include <dynopp/object.hpp>
 #include <hpp/string_view.hpp>
-#include <suitepp/suitepp/suitepp.hpp>
+#include <suitepp/suitepp.hpp>
 
 #include <hpp/utility.hpp>
 #include <iostream>
