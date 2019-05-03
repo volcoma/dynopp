@@ -1,6 +1,6 @@
 sudo: required
 language: cpp
-
+dist: xenial
 
 env:
   global:
@@ -15,13 +15,12 @@ matrix:
       addons: &clang38
         apt:
           sources: 
-            - llvm-toolchain-trusty-3.8
+            - llvm-toolchain-xenial-3.8
             - ubuntu-toolchain-r-test
           packages:
             - libstdc++-5-dev
             - clang-3.8
             - cmake
-            - cmake-data
       env: 
         - COMPILERCXX='clang++-3.8'
         - COMPILERC='clang-3.8'
@@ -31,13 +30,12 @@ matrix:
       addons: &clang39
         apt:
           sources: 
-            - llvm-toolchain-trusty-3.9
+            - llvm-toolchain-xenial-3.9
             - ubuntu-toolchain-r-test
           packages:
             - libstdc++-6-dev
             - clang-3.9
             - cmake
-            - cmake-data
       env: 
         - COMPILERCXX='clang++-3.9'
         - COMPILERC='clang-3.9'
@@ -47,13 +45,12 @@ matrix:
       addons: &clang40
         apt:
           sources: 
-            - llvm-toolchain-trusty-4.0
+            - llvm-toolchain-xenial-4.0
             - ubuntu-toolchain-r-test
           packages:
             - libstdc++-6-dev
             - clang-4.0
             - cmake
-            - cmake-data
       env: 
         - COMPILERCXX='clang++-4.0'
         - COMPILERC='clang-4.0'
@@ -63,13 +60,12 @@ matrix:
       addons: &clang50
         apt:
           sources: 
-            - llvm-toolchain-trusty-5.0
+            - llvm-toolchain-xenial-5.0
             - ubuntu-toolchain-r-test
           packages:
             - libstdc++-7-dev
             - clang-5.0
             - cmake
-            - cmake-data
       env: 
         - COMPILERCXX='clang++-5.0'
         - COMPILERC='clang-5.0'
@@ -84,7 +80,6 @@ matrix:
           packages:
             - g++-5
             - cmake
-            - cmake-data
       env:
         - COMPILERCXX='g++-5'
         - COMPILERC='gcc-5'
@@ -98,7 +93,6 @@ matrix:
           packages:
             - g++-6
             - cmake
-            - cmake-data
       env:
         - COMPILERCXX='g++-6'
         - COMPILERC='gcc-6'
@@ -112,7 +106,6 @@ matrix:
           packages:
             - g++-7
             - cmake
-            - cmake-data
       env:
         - COMPILERCXX='g++-7'
         - COMPILERC='gcc-7'
