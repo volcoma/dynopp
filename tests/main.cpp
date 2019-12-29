@@ -83,17 +83,13 @@ inline std::ostream& operator<<(std::ostream& o,
 {
 	return o << obj.get_impl();
 }
-}
-
-struct Foo
-{
-};
+} // namespace dyno
 
 template <typename T>
 void test_object(const std::string& test, int calls, int tests)
 {
 	// clang-format off
-	suitepp::test(test + ", calls=" + std::to_string(calls), [&]()
+	TEST_CASE(test + ", calls=" + std::to_string(calls))
     {
 		auto code = [&]() {
 			for(int i = 0; i < calls; ++i)
@@ -129,7 +125,7 @@ void test_object(const std::string& test, int calls, int tests)
 		};
 
 		EXPECT_NOTHROWS(code()).repeat(tests);
-	});
+	};
 	// clang-format on
 }
 
@@ -153,26 +149,21 @@ void test_binder(const std::string& test, int calls, int slots, int tests)
 
 	binder.flush_pending();
 
-	// clang-format off
-	suitepp::test(test + " multicast, calls=" + std::to_string(calls) + ", slots=" + std::to_string(slots),
-	[&]()
-    {
-	    auto code = [&]()
-        {
-            for(int i = 0; i < calls; ++i)
-            {
-                binder.dispatch("plugin_on_system_ready");
+	TEST_CASE(test + " multicast, calls=" + std::to_string(calls) + ", slots=" + std::to_string(slots))
+	{
+		auto code = [&]() {
+			for(int i = 0; i < calls; ++i)
+			{
+				binder.dispatch("plugin_on_system_ready");
+			}
+		};
 
-            }
-        };
+		EXPECT_NOTHROWS(code()).repeat(tests);
+	};
 
-        EXPECT_NOTHROWS(code()).repeat(tests);
-	});
-
-	suitepp::test(test + " unicast without return, calls=" + std::to_string(calls), [&]()
-    {
-		auto code = [&]()
-        {
+	TEST_CASE(test + " unicast without return, calls=" + std::to_string(calls))
+	{
+		auto code = [&]() {
 			for(int i = 0; i < calls; ++i)
 			{
 				binder.call("plugin_on_system_ready");
@@ -180,13 +171,12 @@ void test_binder(const std::string& test, int calls, int slots, int tests)
 		};
 
 		EXPECT_NOTHROWS(code()).repeat(tests);
-	});
+	};
 
-	suitepp::test(test + " unicast with return, calls=" + std::to_string(calls), [&]()
-    {
+	TEST_CASE(test + " unicast with return, calls=" + std::to_string(calls))
+	{
 
-		auto code = [&]()
-        {
+		auto code = [&]() {
 			for(int i = 0; i < calls; ++i)
 			{
 				binder.template call<int>("plugin_on_system_ready");
@@ -194,12 +184,12 @@ void test_binder(const std::string& test, int calls, int slots, int tests)
 		};
 
 		EXPECT_NOTHROWS(code()).repeat(tests);
-	});
-	// clang-format on
+	};
 }
 
 int main()
 {
+
 	constexpr int calls = 10;
 	constexpr int tests = 10;
 	constexpr int slots = 100;
