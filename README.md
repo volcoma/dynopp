@@ -1,5 +1,6 @@
-[![Build Status](https://travis-ci.org/volcoma/dynopp.svg?branch=master)](https://travis-ci.org/volcoma/dynopp)
-[![Build status](https://ci.appveyor.com/api/projects/status/uexodqmh9u2qabc6?svg=true)](https://ci.appveyor.com/project/volcoma/dynopp)
+![windows](https://github.com/volcoma/dynopp/actions/workflows/windows.yml/badge.svg)
+![linux](https://github.com/volcoma/dynopp/actions/workflows/linux.yml/badge.svg)
+![macos](https://github.com/volcoma/dynopp/actions/workflows/macos.yml/badge.svg)
 
 ## dynopp c++14 library for dynamic dispatch and dynamic objects 
 

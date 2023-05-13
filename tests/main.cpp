@@ -3,7 +3,7 @@
 #include <dynopp/binder.hpp>
 #include <dynopp/object.hpp>
 #include <hpp/string_view.hpp>
-#include <suitepp/suitepp.hpp>
+#include <suitepp/suite.hpp>
 
 #include <hpp/utility.hpp>
 #include <iostream>
@@ -86,7 +86,7 @@ inline std::ostream& operator<<(std::ostream& o,
 } // namespace dyno
 
 template <typename T>
-void test_object(const std::string& test, int calls, int tests)
+void test_object(const std::string& test, int calls)
 {
 	// clang-format off
 	TEST_CASE(test + ", calls=" + std::to_string(calls))
@@ -124,13 +124,13 @@ void test_object(const std::string& test, int calls, int tests)
 			}
 		};
 
-		EXPECT_NOTHROWS(code()).repeat(tests);
+		EXPECT_NOTHROWS(code());
 	};
 	// clang-format on
 }
 
 template <typename T>
-void test_binder(const std::string& test, int calls, int slots, int tests)
+void test_binder(const std::string& test, int calls, int slots)
 {
 	T binder;
 	for(int j = 0; j < slots; ++j)
@@ -158,7 +158,7 @@ void test_binder(const std::string& test, int calls, int slots, int tests)
 			}
 		};
 
-		EXPECT_NOTHROWS(code()).repeat(tests);
+		EXPECT_NOTHROWS(code());
 	};
 
 	TEST_CASE(test + " unicast without return, calls=" + std::to_string(calls))
@@ -170,7 +170,7 @@ void test_binder(const std::string& test, int calls, int slots, int tests)
 			}
 		};
 
-		EXPECT_NOTHROWS(code()).repeat(tests);
+		EXPECT_NOTHROWS(code());
 	};
 
 	TEST_CASE(test + " unicast with return, calls=" + std::to_string(calls))
@@ -183,7 +183,7 @@ void test_binder(const std::string& test, int calls, int slots, int tests)
 			}
 		};
 
-		EXPECT_NOTHROWS(code()).repeat(tests);
+		EXPECT_NOTHROWS(code());
 	};
 }
 
@@ -191,31 +191,30 @@ int main()
 {
 
 	constexpr int calls = 10;
-	constexpr int tests = 10;
 	constexpr int slots = 100;
 
 	{
 		using binder = dyno::binder<dyno::anystream, dyno::anystream, std::string>;
-		test_binder<binder>("any binder string", calls, slots, tests);
+		test_binder<binder>("any binder string", calls, slots);
 
 		using object_rep = dyno::object_rep<dyno::anystream, dyno::anystream, std::string>;
 		using object = dyno::object<object_rep>;
-		test_object<object>("any object string", calls, tests);
+		test_object<object>("any object string", calls);
 	}
 
 	{
 		using binder = dyno::binder<dyno::anystream, dyno::anystream, std::string, hpp::string_view>;
-		test_binder<binder>("any binder string_view", calls, slots, tests);
+		test_binder<binder>("any binder string_view", calls, slots);
 
 		using object_rep = dyno::object_rep<dyno::anystream, dyno::anystream, std::string, hpp::string_view>;
 		using object = dyno::object<object_rep>;
-		test_object<object>("any object string_view", calls, tests);
+		test_object<object>("any object string_view", calls);
 	}
 
 	{
 		using object_rep = dyno::object_rep<nlohmann::json, nlohmann::json, std::string, hpp::string_view>;
 		using object = dyno::object<object_rep>;
-		test_object<object>("json object", calls, tests);
+		test_object<object>("json object", calls);
 	}
 
 	return 0;
